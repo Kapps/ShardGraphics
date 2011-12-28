@@ -42,17 +42,17 @@ public:
 	}
 
 	/// Sets the data for this buffer to the specified value.	
-	/// Params:
-	///		Data = The data to set on to this buffer. If null, the data will be allocated but not initialized.
-	///		SizeInBytes = The size, in bytes, of the data inside data.
+	/// Params:		
 	/// 	Elements = The elements to set on this VertexBuffer.
 	///		VertexUseHint = Determines how the data will be used.
 	///		AccessHint = Determines how the data will be accessed.
-	void SetData(T)(in T[] Elements, BufferUseHint UseHint, BufferAccessHint AccessHint) {
+	/// 	ElementSize = The size of a single element in this buffer. For an IndexBuffer, this is either 2 or 4. For a VertexBuffer, this is the size of the vertices it contains.
+	void SetData(T)(in T[] Elements, uint ElementSize, BufferUseHint UseHint, BufferAccessHint AccessHint) {
 		GLenum Style = UseHint + AccessHint;
 		debug EnsureValidStyle(Style);			
 		debug IsDataSet = true;
 		_SizeInBytes = Elements.length * T.sizeof;
+		_ElementSize = ElementSize;
 		static if(IsIndexBuffer) {
 			IndexBuffer OldBuffer = GraphicsDevice.Indices;
 			GraphicsDevice.Indices = this;						
@@ -69,6 +69,18 @@ public:
 	/// Gets the total size, in bytes, of this VBO.
 	@property uint SizeInBytes() const {
 		return _SizeInBytes;
+	}
+
+	/// Returns the size, in bytes, of a single element in this buffer.
+	/// For an IndexBuffer, this is the size of the indices (2, or 4).
+	/// For a VertexBuffer, this is the size of the vertex.
+	@property uint ElementSize() const {
+		return _ElementSize;
+	}
+
+	/// Gets the number of elements contained within this buffer.
+	@property uint NumElements() const {
+		return SizeInBytes / ElementSize;
 	}
 
 	/+ /// Returns a pointer to the contents of this buffer in the form of an array. This array should never be stored.
@@ -136,11 +148,12 @@ public:
 	/// 	End = The last index (exclusive) to return a segment for.
 	VBOSlice!(IsIndexBuffer) opSlice(size_t Start, size_t End) {
 		return VBOSlice!(IsIndexBuffer)(this, Start, End);
-	}
+	}	
 	
 private:
 	debug bool IsDataSet = false;
 	uint _SizeInBytes;
+	uint _ElementSize;
 
 	void EnsureValidStyle(GLenum Style) const {		
 		debug assert(

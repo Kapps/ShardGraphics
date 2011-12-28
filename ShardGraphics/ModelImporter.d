@@ -146,9 +146,10 @@ public:
 		int VBCount = Stream.Read!int;
 		for(int i = 0; i < VBCount; i++) {
 			int VBID = Stream.Read!int;
+			uint VertexStride = Stream.Read!uint;
 			VertexBuffer VB = VBs[VBID];						
 			ubyte[] VBData = Stream.ReadPrefixed!ubyte;
-			VB.SetData(VBData, BufferUseHint.Static, BufferAccessHint.WriteOnly);
+			VB.SetData(VBData, VertexStride, BufferUseHint.Static, BufferAccessHint.WriteOnly);
 		}
 				
 		int IBCount = Stream.Read!int;
@@ -157,7 +158,7 @@ public:
 			IndexBuffer IB = IBs[IBID];
 			int IndiceSize = Stream.Read!int;
 			ubyte[] IndiceData = Stream.ReadPrefixed!ubyte;
-			IB.SetData(IndiceData, BufferUseHint.Static, BufferAccessHint.WriteOnly);			
+			IB.SetData(IndiceData, IndiceSize, BufferUseHint.Static, BufferAccessHint.WriteOnly);			
 		}
 		
 		int TextureCount = Stream.Read!int;
