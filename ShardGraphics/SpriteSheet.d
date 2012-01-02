@@ -2,10 +2,9 @@
 import ShardTools.Map;
 import ShardGraphics.Texture;
 public import ShardGraphics.SpriteSheetPart;
-import ShardContent.IAsset;
 
 /// Represents a texture capable of containing multiple, smaller, textures.
-class SpriteSheet : IAsset {
+class SpriteSheet {
 
 public:
 	/// Initializes a new instance of the SpriteSheet object.

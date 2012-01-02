@@ -1,4 +1,5 @@
 ﻿module ShardGraphics.Viewport;
+private import ShardTools.Event;
 public import ShardMath.Rectangle;
 import gl;
 
@@ -58,8 +59,25 @@ public static:
 		return Result;
 	}
 
+	/// Gets the aspect ratio of the viewport.
+	@property float AspectRatio() {
+		Rectanglei Dim = Dimensions;
+		return Dim.Width / cast(float)Dim.Height;
+	}
+
 	/// Ditto
 	@property void Dimensions(Rectanglei Value) {
 		glViewport(Value.X, Value.Y, Value.Width, Value.Height);
+		Changed.Execute();
 	}
+
+	/// Called when any of the dimensions for the viewport are changed.
+	@property Event!(void) Changed() {
+		if(_Changed is null)
+			_Changed = new Event!(void)();
+		return _Changed;
+	}
+
+private static:
+	private Event!(void) _Changed;
 }

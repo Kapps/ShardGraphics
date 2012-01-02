@@ -6,7 +6,6 @@ public import gl;
 private import ShardGraphics.GraphicsDevice;
 private import ShardGraphics.GraphicsErrorHandler;
 private import std.exception;
-private import ShardContent.IAsset;
 
 public import ShardGraphics.VertexDeclaration;
 
@@ -18,7 +17,7 @@ public enum ShaderType {
 }
 
 /// Represents a single shader inside an effect.
-final class Shader : GraphicsResource, IAsset {
+final class Shader : GraphicsResource {
 
 public:
 	/// Initializes a new instance of the Shader object.

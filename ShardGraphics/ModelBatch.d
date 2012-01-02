@@ -1,4 +1,5 @@
 ﻿module ShardGraphics.ModelBatch;
+private import std.exception;
 private import std.array;
 private import ShardGraphics.RenderState;
 private import ShardGraphics.Sampler;
@@ -50,11 +51,12 @@ public:
 		GraphicsDevice.Indices = Part.Indices.VBO;
 		GraphicsDevice.VertexElements = Part.ActiveDeclaration;
 		GLsizei Size = Part.Vertices.Size, Offset = Part.Vertices.Offset;
+		
 		GLsizei VertexSize = Part.ActiveDeclaration.Elements[0].VertexSize;
-		GLsizei ElementSize = Part.Indices.VBO.ElementSize;		
-		// TODO: Is this correct? Should be... but probably is not. :/
-		glDrawElements(GL_TRIANGLES, Size / VertexSize, ElementSize == 2 ? GL_UNSIGNED_SHORT : ElementSize == 4 ? GL_UNSIGNED_INT : 0, cast(void*)(Offset / VertexSize));		
-		//glDrawElements(GL_TRIANGLES, Size / ElementSize / 3, GL_UNSIGNED_SHORT, cast(void*)(Offset / VertexSize));		
+		GLsizei ElementSize = Part.Indices.VBO.ElementSize;				
+		GLenum ElementType = ElementSize == 2 ? GL_UNSIGNED_SHORT : ElementSize == 4 ? GL_UNSIGNED_INT : 0;
+		enforce(ElementType != 0, "Unknown indice size.");
+		glDrawElements(GL_TRIANGLES, Part.Indices.Size / ElementSize * 3, ElementType, cast(void*)(Offset / VertexSize * 3));				
 	}	
 
 	/+ // Removed. Possibly only for now? It's just a dumb way of doing things, too limited and doesn't allow easy changing of effects.

@@ -1,6 +1,5 @@
 ﻿module ShardGraphics.Model;
 private import ShardMath.Matrix;
-private import ShardContent.IAsset;
 private import ShardTools.ReadOnlyCollection;
 public import ShardGraphics.ModelBone;
 private import ShardGraphics.Effect;
@@ -12,7 +11,7 @@ alias ReadOnlyCollection!(ModelMesh, ModelMesh[]) ModelMeshCollection;
 
 /// Represents a single 3D Model.
 /// A Model is essentially a collection of ModelMeshes and the data needed to manipulate them.
-class Model : IAsset {
+class Model {
 
 public:
 	/// Initializes a new instance of the Model object.

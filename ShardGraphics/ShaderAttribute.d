@@ -181,6 +181,7 @@ public:
 	/// Params:
 	/// 	T = The type of the value to return.
 	@property T Value(T)() {		
+		// TODO: Use unqual.
 		GLuint UniformLoc = GetUniformLocation();
 		assert(UniformLoc != -1);
 		static if(is(T == float) || is(T == GLfloat)) {
@@ -279,7 +280,7 @@ private:
 	GLuint _Position;
 	string _Name;
 	string _Type;	
-	AttributeModifier _Modifiers;
+	AttributeModifier _Modifiers;	
 }
 
 /// Unused and untested.

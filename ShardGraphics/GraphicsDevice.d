@@ -50,6 +50,7 @@ static public:
 	shared static this() {
 		// Can't do anything API related here, because the context is not created.	
 		_State = new RenderState();
+		SyncLock = new Object();
 	}
 	
 	/// Returns the Graphics API being used for rendering. Only OpenGL is supported at the moment.
@@ -260,6 +261,26 @@ static public:
 		return _RenderTargets;
 	}
 
+	/// Queues the given callback to be invoked by the application at some later time on the main thread.
+	/// This operation is thread-safe.
+	/// Params:
+	/// 	Callback = The callback to invoke.
+	void QueueCallback(void delegate() Callback) {
+		synchronized(SyncLock) {
+			QueuedCalls ~= Callback;
+		}
+	}
+
+	/// Invokes the callbacks currently queued.
+	/// This $(B must) be done from the main graphics thread.
+	void InvokeCallbacks() {
+		synchronized(SyncLock) {
+			foreach(void delegate() Callback; QueuedCalls)
+				Callback();
+			QueuedCalls = null;
+		}
+	}
+
 private:
 	__gshared VertexBuffer _VertexBuffer;
 	__gshared IndexBuffer _IndexBuffer;
@@ -269,7 +290,9 @@ private:
 	__gshared VertexDeclaration _ActiveDeclaration;
 	__gshared Sampler _ActiveSampler;
 	__gshared RenderState _State;
-	__gshared RenderTargetCollection _RenderTargets;
+	__gshared RenderTargetCollection _RenderTargets;	
+	__gshared void delegate()[] QueuedCalls;	
+	__gshared const(Object) SyncLock;
 
 	void CreateSamplers() {
 		enforce(_Samplers is null, "Attempted to re-create Samplers.");			

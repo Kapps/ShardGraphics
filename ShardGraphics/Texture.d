@@ -1,4 +1,5 @@
 ﻿module ShardGraphics.Texture;
+import std.stdio : writeln;
 private import std.math;
 private import ShardTools.ImageSaver;
 private import std.file;
@@ -12,7 +13,6 @@ public import ShardTools.Color;
 
 private import ShardGraphics.GraphicsDevice;
 public import ShardGraphics.VertexBufferObject;
-private import ShardContent.IAsset;
 import std.conv;
 import std.exception;
 
@@ -22,8 +22,17 @@ enum TextureWrap {
 	MirroredRepeat = GL_MIRRORED_REPEAT
 }
 
+enum TextureFilter {
+	Nearest = GL_NEAREST,
+	Linear = GL_LINEAR,
+	NearestMipmapNearest = GL_NEAREST_MIPMAP_NEAREST,
+	LinearMipmapNearest = GL_LINEAR_MIPMAP_NEAREST,
+	NearestMipmapLinear = GL_NEAREST_MIPMAP_LINEAR,
+	LinearMipmapLinear = GL_LINEAR_MIPMAP_LINEAR
+}
+
 /// Represents a single 2D texture.
-class Texture : GraphicsResource, IAsset {
+class Texture : GraphicsResource {
 
 public:
 
@@ -40,7 +49,7 @@ public:
 	}
 
 	/// Gets or sets how the texture should be wrapped, horizontally (aka s).
-	TextureWrap HorizontalWrap() {
+	@property TextureWrap HorizontalWrap() {
 		TextureWrap Result;
 		mixin(GetTempSetMixin());
 		glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, cast(int*)&Result);
@@ -48,13 +57,13 @@ public:
 	}
 
 	/// Ditto
-	void HorizontalWrap(TextureWrap Value) {			
+	@property void HorizontalWrap(TextureWrap Value) {			
 		mixin(GetTempSetMixin());
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, cast(int)Value);		
 	}
 
 	/// Gets or sets how the texture should be wrapped, vertically (aka t).
-	TextureWrap VerticalWrap() {
+	@property TextureWrap VerticalWrap() {
 		TextureWrap Result;
 		mixin(GetTempSetMixin());
 		glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, cast(int*)&Result);
@@ -62,14 +71,57 @@ public:
 	}
 
 	/// Ditto
-	void VerticalWrap(TextureWrap Value) {			
+	@property void VerticalWrap(TextureWrap Value) {			
 		mixin(GetTempSetMixin());
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, cast(int)Value);		
 	}	
+
+	/// Gets or sets the min filter used for the texture.
+	@property TextureFilter MinFilter() {
+		TextureFilter Result;
+		mixin(GetTempSetMixin());		
+		glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, cast(int*)&Result);
+		return Result;
+	}
+
+	/// Ditto
+	@property void MinFilter(TextureFilter Value) {
+		mixin(GetTempSetMixin());
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, cast(int)Value);
+	}
+
+	/// Gets or sets the mag filter used for the texture.
+	/// Only Linear or Nearest are allowed.
+	@property TextureFilter MagFilter() {
+		TextureFilter Result;
+		mixin(GetTempSetMixin());		
+		glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, cast(int*)&Result);
+		return Result;
+	}
+
+	/// Ditto
+	@property void MagFilter(TextureFilter Value) {
+		mixin(GetTempSetMixin());
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, cast(int)Value);
+	}
+	
+	/// Gets or sets the maximum anisotropy level for this texture.
+	@property uint MaxAnisotropy() {
+		mixin(GetTempSetMixin());
+		uint Result;
+		glGetTexParameteriv(GL_TEXTURE_2D, 0x84FE, cast(int*)&Result);
+		return Result;
+	}
+	
+	/// Ditto
+	@property void MaxAnisotropy(uint Value) {
+		mixin(GetTempSetMixin());
+		glTexParameteri(GL_TEXTURE_2D, 0x84FE, Value);
+	}
 		
 	/// Sets the pixel data for this texture.	
 	/// Params:
-	/// 	Data		= The data to set on the texture. This is allowed to be null to simply allocate data for the texture, to be set at a later time.
+	/// 	Data		= The data to set on the texture. This is allowed to be null to simply allocate data for the texture, to be set at a later time. This value is not stored, just copied.
 	/// 	Width		= The width, in pixels, of the texture.
 	/// 	Height		= The height, in pixels, of the texture.
 	///		UseHint		= A hint indicating the way this texture will be used.
@@ -129,18 +181,7 @@ public:
 			ubyte OldR = Pixel.R;
 			Pixel.R = Pixel.B;
 			Pixel.B = OldR;
-		}
-		// Another hack. Output is upside down due to coordinate system.
-		for(int y = 0; y < Height / 2; y++) {
-			int TargetHeight = Height - y - 1;
-			for(int x = 0; x < Width; x++) {
-				int Index = TargetHeight * Width + x;
-				int OldIndex = y * Width + x;
-				Color Curr = Data[Index];
-				Data[Index] = Data[OldIndex];
-				Data[OldIndex] = Curr;
-			}
-		}
+		}		
 		ImageSaver.savePNG(FilePath, Data, Width, Height);
 	}
 
@@ -154,7 +195,22 @@ public:
 		enforce(IsDataSet, "No data set yet.");
 		Color[] Result = new Color[Width * Height];		
 		glGetTexImage(GL_TEXTURE_2D, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, cast(void*)Result.ptr);
+		// HACK: Output is upside down. Fix this...
+		for(int y = 0; y < Height / 2; y++) {
+			int TargetHeight = Height - y - 1;
+			for(int x = 0; x < Width; x++) {
+				int Index = TargetHeight * Width + x;
+				int OldIndex = y * Width + x;
+				Color Curr = Result[Index];
+				Result[Index] = Result[OldIndex];
+				Result[OldIndex] = Curr;
+			}
+		}
 		return Result;
+	}
+
+	~this() {
+		writeln("test");
 	}
 
 private:

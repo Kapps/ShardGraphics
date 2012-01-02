@@ -4,7 +4,6 @@ import ShardMath.Rectangle;
 import ShardGraphics.Texture;
 
 import ShardGraphics.GraphicsResource;
-import ShardContent.IAsset;
 
 /// A bitwise enum representing the style of a font.
 enum FontStyle {
@@ -16,7 +15,7 @@ enum FontStyle {
 }
 
 /// Represents a collection of bitmap characters that makes up a font.
-class SpriteFont : IAsset {
+class SpriteFont {
 
 public:
 	/// Initializes a new instance of the SpriteFont object.	
