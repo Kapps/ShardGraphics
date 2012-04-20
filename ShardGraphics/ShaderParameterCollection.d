@@ -35,6 +35,12 @@ public:
 		return null;
 	}+/
 
+	package void Rebind(ShaderAttribute[] Attributes) {
+		this.Clear();
+		for(int i = 0; i < Attributes.length; i++)
+			Set(Attributes[i].Name, Attributes[i]);
+	}
+
 private:	
 
 }

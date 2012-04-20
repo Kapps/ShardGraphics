@@ -14,7 +14,7 @@ public:
 		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &MaxTextures);
 		this.Samplers = new Sampler[MaxTextures];
 		for(size_t i = 0; i < Samplers.length; i++)
-			Samplers[i] = new Sampler(i);
+			Samplers[i] = new Sampler(cast(int)i);
 	}
 
 	/// Gets the number of elements in this collection. 

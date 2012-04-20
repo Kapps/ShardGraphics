@@ -1,4 +1,5 @@
 ﻿module ShardGraphics.UniformBuffer;
+private import std.traits;
 private import ShardMath.Matrix;
 private import ShardGraphics.GraphicsErrorHandler;
 private import std.exception;
@@ -65,7 +66,8 @@ public:
 		//static if(T.sizeof > 128) {			
 			T CurrentFull = this.Get!T();
 			glBindBuffer(GL_UNIFORM_BUFFER, ResourceID);
-			glBindBufferBase(GL_UNIFORM_BUFFER, Index, ResourceID);
+			//glBindBufferBase(GL_UNIFORM_BUFFER, Index, ResourceID);
+			glBindBufferBase(GL_UNIFORM_BUFFER, EffectPool.Default.BufferToIndex[this], ResourceID);
 			foreach(Index, Field; Value.tupleof) {
 				alias typeof(Field) FieldType;
 				enum string FieldName = T.tupleof[Index].stringof[3 + T.stringof.length .. $];
@@ -101,7 +103,6 @@ public:
 	void Set(string Name, T)(in T Value) {
 
 		// TODO: Support indexing.
-		// TODO: Remove the _DataSet restriction. This can probably be done by BindBufferBase in the EffectPool.
 
 		//enforce(_DataSet, "Value must be set prior to PartialValue being set.");
 		//enforce(Value.length + Offset <= T.sizeof);		
@@ -114,7 +115,9 @@ public:
 			//glBindBufferBase(GL_UNIFORM_BUFFER, Index, ResourceID);
 			//_DataSet = true;
 		//}
-		glBindBufferBase(GL_UNIFORM_BUFFER, Index, ResourceID);
+		//glBindBufferBase(GL_UNIFORM_BUFFER, Index, ResourceID);
+		// TODO: Change BufferToIndex to not be dumb. Like, have this class contain it.
+		glBindBufferBase(GL_UNIFORM_BUFFER, EffectPool.Default.BufferToIndex[this], ResourceID);
 		SetVariableInternal!(Name, T)(Value);
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 		//memcpy((cast(ubyte*)(&_Value)) + Offset, Value.ptr, Value.length);
@@ -130,7 +133,12 @@ public:
 	// Internal variable assigner. Does not perform any checks, nor change the active buffer.
 	private void SetVariableInternal(string Name, T)(in T Value) {
 		size_t Offset = GetAndSetOffset(Name);
-		glBufferSubData(GL_UNIFORM_BUFFER, Offset, T.sizeof, &Value);
+		static if(is(Unqual!T == Color)) {
+			Vector3f c = Value.ToVector3();
+			// TODO: Support Vector4.
+			glBufferSubData(GL_UNIFORM_BUFFER, Offset, typeof(c).sizeof, &c);
+		} else
+			glBufferSubData(GL_UNIFORM_BUFFER, Offset, T.sizeof, &Value);
 		//__traits(getMember, this._Value, Name) = Value;
 	}	
 

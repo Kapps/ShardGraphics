@@ -90,7 +90,7 @@ static public:
 	/// Clears the currently active render target.
 	/// Params:
 	///		ClearColor = The color to clear the display to.
-	///		BitsToClear = The buffers to clear, such as GL_COLOR_BUFFER_BIT.
+	///		BitsToClear = The buffers to clear, such as ColorBuffer or DepthBuffer.
 	void Clear(Color ClearColor, ClearBits BitsToClear = ClearBits.ColorBuffer | ClearBits.DepthBuffer) {
 		if(ClearColor != _ClearColor || DisableCaching) {
 			glClearColor(ClearColor.R / 255f, ClearColor.G / 255f, ClearColor.B / 255f, ClearColor.A / 255f);

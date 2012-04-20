@@ -90,7 +90,7 @@ public:
 			GraphicsDevice.VertexElements = this.VertDec;
 			GraphicsDevice.Program = this.Program;
 
-			VertBuffer.SetData(Vertices, SpriteVertex.sizeof, BufferUseHint.Stream, BufferAccessHint.WriteOnly);			
+			VertBuffer.SetData(Vertices, cast(uint)SpriteVertex.sizeof, BufferUseHint.Stream, BufferAccessHint.WriteOnly);			
 			size_t IndiceIndex = 0;
 			/*ushort[] Indices = new ushort[NumElements * 6];			
 			for(int i = 0; i < NumElements; i++) {				

@@ -11,7 +11,7 @@ public:
 	/// 	VBO = The underlying VBO.
 	/// 	Offset = The offset, in bytes, in VBO that this slice starts at.
 	/// 	Size = The size, in bytes, of this slice.
-	this(VertexBufferObject!(IsIndexBuffer) VBO, const size_t Offset, const size_t Size) {
+	this(VertexBufferObject!(IsIndexBuffer) VBO, const uint Offset, const uint Size) {
 		this.VBO = VBO;
 		this.Offset = Offset;
 		this.Size = Size;
@@ -21,13 +21,13 @@ public:
 	const VertexBufferObject!(IsIndexBuffer) VBO;
 
 	/// The offset, in bytes, in VBO that this slice starts at.
-	const size_t Offset;
+	const uint Offset;
 
 	/// The size, in bytes, of this slice.
-	const size_t Size;
+	const uint Size;
 
 	/// The last byte included in this slice.
-	@property size_t End() const {
+	@property uint End() const {
 		return Offset + Size;
 	}	
 	

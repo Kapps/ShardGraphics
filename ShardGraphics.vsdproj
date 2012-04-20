@@ -159,11 +159,6 @@
       <Project>{816b3987-0eb7-44a7-82de-1b4089f183b5}</Project>
       <Private>True</Private>
     </ProjectReference>
-    <ProjectReference Include="ShardGraphicsContent\ShardGraphicsContent\ShardGraphicsContent.assetproj">
-      <Name>ShardGraphicsContent</Name>
-      <Project>{9e3f518f-ce4d-4f3c-8ebb-58c9ca9a7ff3}</Project>
-      <Private>True</Private>
-    </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{cfafc9fe-4e29-4dd0-bfa0-8740de0b0d60}</ProjectGuid>

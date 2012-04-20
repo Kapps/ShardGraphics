@@ -33,14 +33,10 @@ public:
 			Pool = EffectPool.Default;
 		this._Pool = Pool;
 		this.Shaders = cast(Shader[])Shaders.dup;		
-		Compile();
-		foreach(Shader shader; this.Shaders) {
-			foreach(string Name; shader.UniformBlockNames) {
-				if(!Contains(_Uniforms, Name))
-					_Uniforms ~= Name;
-			}
-		}
-		Pool.RegisterEffect(this);
+		GLuint ID = glCreateProgram();
+		assert(ID != 0);
+		this.ResourceID = ID;		
+		Link();
 	}	
 
 	/// Gets the first shader of the specified type.
@@ -79,12 +75,26 @@ public:
 	@property const(string[]) Uniforms() const {
 		return _Uniforms;
 	}
+
+	package void Relink() {
+		Link();
+	}
 	
 private:
-	void Compile() {
-		GLuint ID = glCreateProgram();
-		debug assert(ID != 0);
-		ResourceID = ID;		
+	
+	void Link() {
+		Compile();
+		_Uniforms = null;		
+		foreach(Shader shader; this.Shaders) {
+			foreach(string Name; shader.UniformBlockNames) {
+				if(!Contains(_Uniforms, Name))
+					_Uniforms ~= Name;
+			}
+		}
+		Pool.RegisterEffect(this);
+	}
+
+	void Compile() {		
 		debug {
 			bool HasVertexShader = false;
 			bool HasPixelShader = false;
@@ -92,7 +102,7 @@ private:
 		foreach(Shader; Shaders) {			
 			foreach(ShaderAttribute Attribute; Shader.Parameters.Values)
 				Attribute.Bind(this);
-			glAttachShader(ID, Shader.ResourceID);
+			glAttachShader(ResourceID, Shader.ResourceID);
 			debug {
 				if(Shader.Type == ShaderType.VertexShader) {
 					enforce(!HasVertexShader, "A VertexShader already exists on this effect.");
@@ -105,23 +115,20 @@ private:
 			}						
 		}
 		debug enforce(HasVertexShader && HasPixelShader, "An effect did not have both a VertexShader and a FragmentShader.");
-		glLinkProgram(ID);
-
-		debug {
-			int WasSuccess;					
-			glGetProgramiv(ID, GL_LINK_STATUS, &WasSuccess);
-			if(!WasSuccess) {
-				int MaxLength;					
-				glGetProgramiv(ID, GL_INFO_LOG_LENGTH, &MaxLength);
-				MaxLength++;
-				char[] InfoLog = new char[MaxLength];
-				glGetProgramInfoLog(ID, MaxLength, &MaxLength, InfoLog.ptr);
-				throw new Exception("An effect failed to link. " ~ to!string(InfoLog) ~ ".");
-			}
-		}
-		/+foreach(Shader; Shaders)
-			foreach(ShaderAttribute Attribute; Shader.Parameters.Values)
-				Attribute.NotifyLinked(ResourceID);+/
+		glLinkProgram(ResourceID);
+		
+		int WasSuccess;					
+		glGetProgramiv(ResourceID, GL_LINK_STATUS, &WasSuccess);
+		if(!WasSuccess) {
+			int MaxLength;					
+			glGetProgramiv(ResourceID, GL_INFO_LOG_LENGTH, &MaxLength);
+			MaxLength++;
+			char[] InfoLog = new char[MaxLength];
+			glGetProgramInfoLog(ResourceID, MaxLength, &MaxLength, InfoLog.ptr);
+			throw new Exception("An effect failed to link. " ~ to!string(InfoLog) ~ ".");
+		}		
+		foreach(Shader; Shaders)
+			Shader.Parent = this;
 		GraphicsErrorHandler.CheckErrors();
 	}
 

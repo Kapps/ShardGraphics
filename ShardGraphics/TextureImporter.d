@@ -4,7 +4,6 @@ private import ShardGraphics.GraphicsDevice;
 public import ShardContent.ContentImporter;
 public import ShardGraphics.Texture;
 import std.stream;
-import std.intrinsic;
 import ShardGraphics.VertexBufferObject;
 
 class TextureImporter : ContentImporter!(Texture) {

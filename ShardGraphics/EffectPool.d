@@ -32,22 +32,25 @@ public:
 	/// Params:
 	/// 	Program = The effect to add.
 	void RegisterEffect(Effect Program) {
-		int BindIndex = 0;
+		//int BindIndex = 0;
 		foreach(string Name; Program.Uniforms) {
-			//int BindIndex;
+			int BindIndex;
 			UniformBuffer Buffer = GetUniform(Name);
 			if(Buffer is null) {
 				Buffer = new UniformBuffer(Program, Name);
-				//BindIndex = Buffers.length;
-				//BufferToIndex[Buffer] = BindIndex;
-				Buffers[Name] = Buffer;				
-			}// else
-				//BindIndex = BufferToIndex[Buffer];
+				BindIndex = cast(int)Buffers.length;
+				BufferToIndex[Buffer] = BindIndex;
+				Buffers[Name] = Buffer;								
+			} else
+				BindIndex = BufferToIndex[Buffer];
 			// TODO: Make sure that it's the same uniform block, and not just one with the same name!			
-			int Index = glGetUniformBlockIndex(Program.ResourceID, toStringz(Buffer.Name));		
+			//int Index = glGetUniformBlockIndex(Program.ResourceID, toStringz(Buffer.Name));		
+			//glUniformBlockBinding(Program.ResourceID, Index, BindIndex++
 			// TODO: Remove index, and make it dependent per program, which it seems to be, as programs can have multiple indices.
 			// But what do we bind to?			
-			glUniformBlockBinding(Program.ResourceID, Index, BindIndex);
+			//glUniformBlockBinding(Program.ResourceID, Index, BindIndex++);			
+			int Index = glGetUniformBlockIndex(Program.ResourceID, toStringz(Buffer.Name));		
+			glUniformBlockBinding(Program.ResourceID, Index, BindIndex);			
 			BindIndex++;
 		}
 	}
@@ -64,7 +67,7 @@ public:
 	
 private:
 	uint PoolID = 0;
-	//int[UniformBuffer] BufferToIndex;
+	package int[UniformBuffer] BufferToIndex;
 	UniformBuffer[string] Buffers;
 	static EffectPool _Default;
 	static EffectPool[] _AllPools;

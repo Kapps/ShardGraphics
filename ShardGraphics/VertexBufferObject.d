@@ -51,7 +51,7 @@ public:
 		GLenum Style = UseHint + AccessHint;
 		debug EnsureValidStyle(Style);			
 		debug IsDataSet = true;
-		_SizeInBytes = Elements.length * T.sizeof;
+		_SizeInBytes = cast(uint)(Elements.length * T.sizeof);
 		_ElementSize = ElementSize;
 		static if(IsIndexBuffer) {
 			IndexBuffer OldBuffer = GraphicsDevice.Indices;
@@ -146,7 +146,7 @@ public:
 	/// Params:
 	/// 	Start = The number of elements within this VBO to return a segment for. For a VertexBuffer, this is the number of bytes. For an IndexBuffer, the number of elements.
 	/// 	End = The last index (exclusive) to return a segment for.
-	VBOSlice!(IsIndexBuffer) opSlice(size_t Start, size_t End) {
+	VBOSlice!(IsIndexBuffer) opSlice(uint Start, uint End) {
 		return VBOSlice!(IsIndexBuffer)(this, Start, End);
 	}	
 	

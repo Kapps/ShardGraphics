@@ -30,8 +30,10 @@ public:
 		this._Type = Type;
 		this._Parameters = new ShaderParameterCollection(Attributes);
 		this._Source = Source.idup;
-		GenerateShader(Source);		
 		this.UniformBlockNames = UniformBlockNames.dup;		
+		GLuint ID = glCreateShader(cast(GLenum)Type);
+		this.ResourceID = ID;
+		GenerateShader(Source);				
 	}
 
 	/// Gets the parameters this Shader contains.
@@ -42,6 +44,15 @@ public:
 	/// Gets the type of this Shader, a value from the ShaderType enum.
 	@property ShaderType Type() const {
 		return _Type;
+	}
+
+	/// Gets the Effect owning this Shader, provided that this Shader has been successfully linked to an Effect.
+	@property Effect Parent() {
+		return _Parent;
+	}
+
+	@property package void Parent(Effect Value) {
+		_Parent = Value;
 	}
 
 	/// Deletes the graphics resource represented by the given ID.
@@ -60,31 +71,37 @@ public:
 	}
 
 	package string[] UniformBlockNames;
+
+	package void Reload(string[] UniformBlockNames, in char[] Source, ShaderAttribute[] Attributes) {
+		this._Parameters.Rebind(Attributes);
+		this._Source = Source.idup;
+		this.UniformBlockNames = UniformBlockNames.dup;
+		GenerateShader(Source);
+		if(Parent)
+			Parent.Relink();
+	}
 	
 private:
 
-	void GenerateShader(in char[] Source) {
-		GLuint ID = glCreateShader(cast(GLenum)Type);
-		super.ResourceID = ID;
+	void GenerateShader(in char[] Source) {		
 		const char* SourcePtr = Source.ptr;
 		enforce(Source != null, "The source for the shader was null.");
 		GLint* length = new GLint();
-		*length = Source.length;
-		glShaderSource(ID, 1, &SourcePtr, length);
-		glCompileShader(ID);
-		debug {
-			int Result;
-			glGetShaderiv(ID, GL_COMPILE_STATUS, &Result);
-			if(Result != GL_TRUE) {
-				char[2048] ErrorMessage;
-				int ActualSize;
-				glGetShaderInfoLog(ID, 2048, &ActualSize, ErrorMessage.ptr);
-				throw new Exception("A shader failed to compile. Details: \'" ~ ErrorMessage[0..ActualSize].idup ~ "\'.");
-			}	
-		}
+		*length = cast(int)Source.length;
+		glShaderSource(ResourceID, 1, &SourcePtr, length);
+		glCompileShader(ResourceID);		
+		int Result;
+		glGetShaderiv(ResourceID, GL_COMPILE_STATUS, &Result);
+		if(Result != GL_TRUE) {
+			char[2048] ErrorMessage;
+			int ActualSize;
+			glGetShaderInfoLog(ResourceID, 2048, &ActualSize, ErrorMessage.ptr);
+			throw new Exception("A shader failed to compile. Details: \'" ~ ErrorMessage[0..ActualSize].idup ~ "\'.");
+		}			
 	}
 
 	ShaderType _Type;
 	ShaderParameterCollection _Parameters;
 	string _Source;
+	Effect _Parent;
 }

@@ -167,7 +167,7 @@ public:
 	/// Gets the height, in pixels, of this texture. Returns zero if no data is set.
 	@property int Height() const {
 		return _Height;
-	}
+	}	
 
 	/// Saves this Texture as an image to the given filepath, as an uncompressed tga file.
 	/// The file path should not have an extension, as a .tga extension is automatically appended.
@@ -207,11 +207,7 @@ public:
 			}
 		}
 		return Result;
-	}
-
-	~this() {
-		writeln("test");
-	}
+	}	
 
 private:
 	bool IsDataSet = false;
@@ -220,7 +216,7 @@ private:
 	bool _DeleteTexture = false;
 
 	void EnsureActive() {
-		enforce(GraphicsDevice.ActiveSampler !is null && GraphicsDevice.ActiveSampler.Value is this, "This operation requires that the active sampler on the GraphicsDevice has it's value set to this texture.");;		
+		enforce(GraphicsDevice.ActiveSampler !is null && GraphicsDevice.ActiveSampler.Value is this, "This operation requires that the active sampler on the GraphicsDevice has it's value set to this texture.");
 	}
 
 	void EnsureValidStyle(GLenum Style) {		
