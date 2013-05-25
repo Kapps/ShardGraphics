@@ -56,6 +56,9 @@
     <Compile Include="ShardGraphics\ModelMeshPart.d">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="ShardGraphics\RenderSettings.d">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="ShardGraphics\RenderState.d">
       <SubType>Code</SubType>
     </Compile>
@@ -159,6 +162,21 @@
       <Project>{816b3987-0eb7-44a7-82de-1b4089f183b5}</Project>
       <Private>True</Private>
     </ProjectReference>
+    <ProjectReference Include="..\ShardGraphicsBase\ShardGraphicsBase.vsdproj">
+      <Name>ShardGraphicsBase</Name>
+      <Project>{ce820e41-ecdf-4bd6-a881-69f5b8f8fccb}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\ShardMath\ShardMath.vsdproj">
+      <Name>ShardMath</Name>
+      <Project>{e7f11097-01cb-46f8-bdfa-077747169bbf}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\ShardTools\ShardTools.vsdproj">
+      <Name>ShardTools</Name>
+      <Project>{b4b4a7d7-80ca-4a81-875d-406c1952562a}</Project>
+      <Private>True</Private>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{cfafc9fe-4e29-4dd0-bfa0-8740de0b0d60}</ProjectGuid>
@@ -170,8 +188,9 @@
     <OutputPath>bin\x86\Debug</OutputPath>
     <BuildType>Library</BuildType>
     <OutputType>Lib</OutputType>
-    <LastBuilt>4/6/2011 8:15:42 AM</LastBuilt>
+    <LastBuilt>01/06/2012 12:34:08 AM</LastBuilt>
     <SkipLibraryStage>True</SkipLibraryStage>
+    <DefaultImports />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <OptimizeCode>False</OptimizeCode>

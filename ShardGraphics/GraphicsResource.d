@@ -21,6 +21,10 @@ public:
 	}
 
 	invariant() {
+		/+debug {
+			if(!Game.Instance.IsRunning)
+				return;
+		}+/
 		GraphicsErrorHandler.CheckErrors();
 	}
 
@@ -50,7 +54,7 @@ public:
 		return _Disposed;
 	}
 
-	~this() {
+	~this() {		
 		if(_ResourceID != 0)
 			DeleteResource(_ResourceID);
 		_Disposed = true;

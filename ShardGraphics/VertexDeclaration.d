@@ -1,7 +1,6 @@
 ﻿module ShardGraphics.VertexDeclaration;
 private import ShardGraphics.GLReflection;
 private import std.traits;
-private import ShardTools.Reflection;
 private import std.exception;
 
 public import ShardGraphics.VertexElement;

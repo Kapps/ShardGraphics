@@ -3,7 +3,6 @@ private import ShardGraphics.GraphicsDevice;
 private import ShardGraphics.Viewport;
 private import std.conv;
 private import std.exception;
-private import ShardFramework.Game;
 private import crc32;
 private import std.algorithm;
 private import std.array;
@@ -42,7 +41,8 @@ public:
 	private this(int Width, int Height, bool CreateTexture, bool CreateDepth) {		
 		this._Width = Width;
 		this._Height = Height;		
-		this._IsDefault = false;							
+		this._IsDefault = false;						
+		this._OwnsTexture = CreateTexture;	
 		GLuint ID;
 		glGenFramebuffers(1, &ID);			
 		this.ResourceID = ID;		
@@ -72,6 +72,7 @@ public:
 
 	this(bool Dummy) {
 		_IsDefault = true;
+		_OwnsTexture = false;
 	}
 	
 	/// Gets the RenderTarget that indicates the back-buffer, or, more technically, the absence of a RenderTarget.
@@ -91,6 +92,8 @@ public:
 		glDeleteFramebuffers(1, &ID);
 		if(_DepthBufferID != 0)
 			glDeleteBuffers(1, &_DepthBufferID);
+		if(_OwnsTexture && _TextureData !is null)
+			destroy(_TextureData);
 	}
 
 	/// Gets the Texture associated with this RenderTarget.
@@ -141,9 +144,10 @@ public:
 	}
 
 private:	
-	static RenderTarget _BackBuffer;
+	static __gshared RenderTarget _BackBuffer;
 	GLuint _DepthBufferID;
 	Texture _TextureData;
+	bool _OwnsTexture;
 	int _Width;
 	int _Height;	
 	bool _IsDefault;

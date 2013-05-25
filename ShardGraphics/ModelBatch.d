@@ -4,7 +4,6 @@ private import std.array;
 private import ShardGraphics.RenderState;
 private import ShardGraphics.Sampler;
 private import ShardGraphics.MaterialShader;
-private import ShardFramework.Camera;
 private import ShardGraphics.Model;
 private import ShardMath.Matrix;
 private import ShardGraphics.SpriteBatch;
@@ -115,6 +114,6 @@ public:
 	}
 	
 private:	
-	static ModelBatch _Default;
+	static __gshared ModelBatch _Default;
 	ModelRendererState _State;
 }

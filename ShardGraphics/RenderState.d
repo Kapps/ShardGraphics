@@ -1,5 +1,4 @@
 ﻿module ShardGraphics.RenderState;
-private import ShardFramework.Game;
 private import ShardGraphics.GraphicsDevice;
 import gl;
 
@@ -111,7 +110,8 @@ public:
 			glEnable(GL_MULTISAMPLE);
 		else
 			glDisable(GL_MULTISAMPLE);
-		Game.Instance.Window.ApplyChanges();
+		// TODO: Apply changes.
+		//Game.Instance.Window.ApplyChanges();
 	}
 
 	/// Gets or sets the level of anti-aliasing to use, provided that anti-aliasing is enabled.
@@ -125,7 +125,7 @@ public:
 			return;
 		// TODO: Validate that this is a supported amount of samples.
 		_MultiSampleCount = Value;
-		Game.Instance.Window.ApplyChanges();
+		//Game.Instance.Window.ApplyChanges();
 	}
 	
 private:

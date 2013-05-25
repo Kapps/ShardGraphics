@@ -1,4 +1,5 @@
 ﻿module ShardGraphics.SpriteBatch;
+//import ShardGraphicsBase.IBasicRenderer;
 import ShardGraphics.RenderState;
 import ShardGraphics.SpriteFont;
 import ShardGraphics.SpriteSheetPart;
@@ -7,7 +8,7 @@ import ShardGraphics.GraphicsErrorHandler;
 import ShardGraphics.TextureImporter;
 import ShardContent.ContentLoader;
 import ShardGraphics.Effect;
-import ShardFramework.Game;
+//import ShardFramework.Game;
 public import ShardGraphics.Texture;
 
 import ShardGraphics.VertexBufferObject;
@@ -22,8 +23,14 @@ enum SpriteBatchState {
 	InBeginEndBlock
 }
 
+/// Indicates whether a SpriteBatch will queue all sprites and then draw them by texture, or immediately render them each call.
+enum BatchMode {
+	Batched = 0,
+	Immediate = 1
+}
+
 /// A class used to draw multiple sprites in a batch.
-class SpriteBatch {
+class SpriteBatch /*: IBasicRenderer*/ {
 
 public:
 	/// Initializes a new instance of the SpriteBatch object.
@@ -43,7 +50,7 @@ public:
 		Elements[0] = VertexElement(InColor.Position, GL_FLOAT, 4, SpriteVertex.sizeof, tmpVert.Color.offsetof);
 		Elements[1] = VertexElement(InPosition.Position, GL_FLOAT, 2, SpriteVertex.sizeof, tmpVert.Position.offsetof);		
 		Elements[2] = VertexElement(InTexCoords.Position, GL_FLOAT, 2, SpriteVertex.sizeof, tmpVert.TexCoords.offsetof);		
-		VertDec = new VertexDeclaration(Elements);		
+		VertDec = new VertexDeclaration(Elements);
 
 		GraphicsDevice.Program = Program;
 		ShaderAttribute TextureAttribute = FragShader.Parameters.Get("SpriteTexture");
@@ -109,7 +116,6 @@ public:
 			this.Indices.SetData(Indices, 2, BufferUseHint.Stream, BufferAccessHint.WriteOnly);			
 
 			GraphicsDevice.DrawElements(RenderStyle.Quads, 4 * NumElements, ElementType.Int16);
-
 			GraphicsDevice.Indices = null;
 			GraphicsDevice.Vertices = null;
 			GraphicsDevice.Program = null;
@@ -193,6 +199,17 @@ public:
 
 		SpriteMapping.Set(Sprite, Vertices);
 	}
+
+	/// Ditto
+	void Draw(const Texture Sprite, Rectanglef Location, Color ColorTint) {
+		Draw(Sprite, Location, ColorTint, Rectanglef.init);
+	}
+
+	/* /// Ditto
+	void Draw(const IImage Sprite, Rectanglef Location, Color ColorTint, Rectanglef SourceRect) {
+		const Texture tex = cast(Texture)Sprite;
+		Draw(tex, Location, ColorTint, SourceRect);
+	}*/
 
 	/// Gets the state of this SpriteBatch.
 	@property SpriteBatchState State() {

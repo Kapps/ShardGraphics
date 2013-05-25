@@ -16,7 +16,7 @@ class EffectPool  {
 public:
 	/// Initializes a new instance of the EffectPool object.
 	this() {		
-		static uint NextPoolID = 1;
+		static __gshared uint NextPoolID = 1;
 		this.PoolID = NextPoolID++;
 		_AllPools ~= this;		
 	}
@@ -69,6 +69,6 @@ private:
 	uint PoolID = 0;
 	package int[UniformBuffer] BufferToIndex;
 	UniformBuffer[string] Buffers;
-	static EffectPool _Default;
-	static EffectPool[] _AllPools;
+	static __gshared EffectPool _Default;
+	static __gshared EffectPool[] _AllPools;
 }

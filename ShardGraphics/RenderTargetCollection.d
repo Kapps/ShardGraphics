@@ -1,5 +1,4 @@
 ﻿module ShardGraphics.RenderTargetCollection;
-private import ShardFramework.Game;
 private import ShardGraphics.GraphicsDevice;
 private import std.algorithm;
 private import std.array;
@@ -16,6 +15,7 @@ public:
 		GLint MaxRenderTargets;
 		glGetIntegerv(GL_MAX_DRAW_BUFFERS, &MaxRenderTargets);
 		this._Capacity = MaxRenderTargets;
+		this._Count = 1;
 		_Targets = new RenderTarget[_Capacity];
 		_Targets[0] = RenderTarget.BackBuffer;
 	}
@@ -26,19 +26,24 @@ public:
 	}
 
 	/// Gets the number of RenderTargets currently set on the GraphicsDevice.
+	/// This is always at least one, and is greater than one when using multiple render targets.
 	@property size_t Count() const {
 		return _Count;
 	}
 
 	/// Sets the RenderTarget at the given index to the given value.
+	/// It is strongly recommended to set the previously active RenderTarget (which is returned) back instead of assigning the BackBuffer when done.
 	/// Params:
 	/// 	Index = The index to set the RenderTarget at. When using only a single render-target, this should be zero.
 	/// 	Value = The RenderTarget to assign, or null to assign the backbuffer.
-	void Set(size_t Index, RenderTarget Value) {
+	/// Returns:
+	/// 	The RenderTarget that was assigned prior to this assignment overwriting it.
+	RenderTarget Set(size_t Index, RenderTarget Value) {
 		if(Index != 0)
 			throw new Exception("Multiple render-targets are not yet supported.");
 		if(_Targets[Index] is Value && !GraphicsDevice.DisableCaching)
-			return;
+			return Value;
+		auto Old = _Targets[Index];
 		_Targets[Index] = Value;
 		if(Index == 0) {
 			if(Value is null || Value is RenderTarget.BackBuffer) {
@@ -49,7 +54,8 @@ public:
 				glBindFramebuffer(GL_FRAMEBUFFER, Value.ResourceID);
 				//glViewport(0, 0, Value.Width, Value.Height);
 			}
-		}					
+		}		
+		return Old;			
 		/+UpdateMRT();
 		if(_Targets[Index] !is null) {
 			// Clear the old one. Remember we're relying on this for the below part.
@@ -62,10 +68,6 @@ public:
 			// Go back to the backbuffer.
 			
 		}+/
-	}
-
-	void opIndexAssign(RenderTarget Value, size_t Index) {		
-		Set(Index, Value);
 	}
 
 	private void UpdateMRT() {

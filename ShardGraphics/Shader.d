@@ -86,9 +86,8 @@ private:
 	void GenerateShader(in char[] Source) {		
 		const char* SourcePtr = Source.ptr;
 		enforce(Source != null, "The source for the shader was null.");
-		GLint* length = new GLint();
-		*length = cast(int)Source.length;
-		glShaderSource(ResourceID, 1, &SourcePtr, length);
+		GLint length = cast(int)Source.length;		
+		glShaderSource(ResourceID, 1, &SourcePtr, &length);
 		glCompileShader(ResourceID);		
 		int Result;
 		glGetShaderiv(ResourceID, GL_COMPILE_STATUS, &Result);

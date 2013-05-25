@@ -169,8 +169,8 @@ public:
 		return _Height;
 	}	
 
-	/// Saves this Texture as an image to the given filepath, as an uncompressed tga file.
-	/// The file path should not have an extension, as a .tga extension is automatically appended.
+	/// Saves this Texture as an image to the given filepath, as a png file.
+	/// The file path should not have an extension, as a .png extension is automatically appended.
 	/// Params:
 	/// 	FilePath = The path to create the image at.
 	void SaveToDisk(string FilePath) const {

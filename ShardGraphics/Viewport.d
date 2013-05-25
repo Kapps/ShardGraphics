@@ -79,5 +79,5 @@ public static:
 	}
 
 private static:
-	private Event!(void) _Changed;
+	private __gshared Event!(void) _Changed;
 }

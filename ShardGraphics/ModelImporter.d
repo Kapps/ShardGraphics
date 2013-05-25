@@ -69,7 +69,7 @@ public:
 		ModelMesh[] Meshes = new ModelMesh[NumMeshes];
 		for(int i = 0; i < NumMeshes; i++) {
 			string Name = Stream.ReadPrefixed!char().idup;
-			Vector3f BSphereCenter = Stream.Read!Vector3f;
+			Vector3f BSphereCenter = Stream.Read!Vector3f;			
 			float BSphereRadius = Stream.Read!float;
 			int ParentBoneIndex = Stream.Read!int;
 			int MeshPartCount = Stream.Read!int;
@@ -151,7 +151,7 @@ public:
 			ubyte[] VBData = Stream.ReadPrefixed!ubyte;
 			VB.SetData(VBData, VertexStride, BufferUseHint.Static, BufferAccessHint.WriteOnly);
 		}
-				
+				 
 		int IBCount = Stream.Read!int;
 		for(int i = 0; i < IBCount; i++) {
 			int IBID = Stream.Read!int;			

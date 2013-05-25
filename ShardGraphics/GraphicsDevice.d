@@ -1,4 +1,5 @@
 ﻿module ShardGraphics.GraphicsDevice;
+private import std.typecons;
 public import ShardGraphics.RenderTargetCollection;
 import std.exception : enforce;
 public import ShardGraphics.RenderState;
@@ -19,14 +20,15 @@ public import ShardGraphics.Viewport;
 private import glfw;
 
 // TODO: Deprecate Quads/QuadStrip. Just fix SpriteBatch first.
+// Also, Points.
 enum RenderStyle {
 	TriangleStrip = GL_TRIANGLE_STRIP,
 	Triangles = GL_TRIANGLES,
 	TriangleFan = GL_TRIANGLE_FAN,
 	Points = GL_POINTS,
 	LineStrip = GL_LINE_STRIP,
-	QuadStrip = 8,//GL_QUAD_STRIP,
-	Quads = 7//GL_QUADS	
+	Quads = 7,//GL_QUADS
+	QuadStrip = 8//GL_QUAD_STRIP,	
 }
 
 enum ElementType {
@@ -41,11 +43,20 @@ enum ClearBits {
 	StencilBuffer = GL_STENCIL_BUFFER_BIT,	
 }
 
+/// Determines how high quality graphics to use.
+/// Not strictly related to the GraphicsDevice, but a frequently used feature by things requiring access to it.
+enum GraphicsQuality {
+	Low = 1,
+	Medium = 2,
+	High = 3,
+	Ultra = 4
+}
+
 /// A static helper class used to handle drawing, including caching relevent resources.
 static class GraphicsDevice {
 
 static public:	
-	static bool DisableCaching = true;
+	static __gshared bool DisableCaching = true;
 
 	shared static this() {
 		// Can't do anything API related here, because the context is not created.	
@@ -69,10 +80,6 @@ static public:
 		// TODO: Consider making the gets a ResourceReference!T : GraphicsResource.
 		// This way, we can have an IsExternal property, indicating the resource is unknown (such as when set by an external API).
 		// Should have an (implicit?) cast to T, and throw when external and casted.
-		_Effect = null;
-		_VertexBuffer = null;
-		_ActiveDeclaration = null;
-		_IndexBuffer = null;
 		for(size_t i = 0; i < _Samplers.Capacity; i++)
 			_Samplers[i].ClearCache();
 		uint ActiveSamplerStore;
@@ -223,9 +230,9 @@ static public:
 
 	/// Draws the elements contained by the currently active VertexBuffer and IndexBuffer.
 	/// Params:
-	///		RenderStyle = The way which to draw the elements, such as GL_TRIANGLE_STRIP.
+	///		RenderStyle = The way which to draw the elements, such as TriangleStrip.
 	///		ElementCount = The number of elements to draw.
-	///		ElementType = The type of the elements to draw, such as GL_UNSIGNED_SHORT.
+	///		ElementType = The type of the elements to draw, such as UInt16.
 	void DrawElements(RenderStyle RenderStyle, size_t ElementCount, ElementType ElementType) {
 		enforce(_VertexBuffer !is null, "Unable to draw elements without a currently set vertex buffer.");	
 		enforce(_IndexBuffer !is null, "Unable to draw elements without a currently set index buffer.");	
@@ -235,7 +242,7 @@ static public:
 
 	/// Draws the elements contained by the currently active VertexBuffer, without using an IndexBuffer.
 	/// Params:
-	///		Style = The way which to draw the elements, such as GL_TRIANGLE_STRIP.
+	///		Style = The way which to draw the elements, such as TriangleStrip.
 	///		ElementCount = The number of elements to draw.
 	void DrawArrays(RenderStyle Style, size_t ElementCount) {
 		enforce(_VertexBuffer !is null, "Unable to draw arrays without a currently set vertex buffer.");	
@@ -284,15 +291,17 @@ static public:
 private:
 	__gshared VertexBuffer _VertexBuffer;
 	__gshared IndexBuffer _IndexBuffer;
-	__gshared Effect _Effect;	
-	__gshared SamplerCollection _Samplers;
+	__gshared Effect _Effect;		
 	__gshared Color _ClearColor;
 	__gshared VertexDeclaration _ActiveDeclaration;
 	__gshared Sampler _ActiveSampler;
+	__gshared SamplerCollection _Samplers;
 	__gshared RenderState _State;
 	__gshared RenderTargetCollection _RenderTargets;	
 	__gshared void delegate()[] QueuedCalls;	
-	__gshared const(Object) SyncLock;
+	__gshared const(Object) SyncLock;	
+	__gshared size_t _ElementsThisClear;
+	__gshared size_t _ElementsLastClear;
 
 	void CreateSamplers() {
 		enforce(_Samplers is null, "Attempted to re-create Samplers.");			

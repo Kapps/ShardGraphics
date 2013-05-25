@@ -19,8 +19,9 @@ public:
 		GLenum Error = glGetError();
 		if(Error == GL_NO_ERROR)
 			return;		
-		Logger.Default.LogMessage("errors", "GraphicsDevice CheckErrors failed in " ~ FileName ~ "(" ~ to!string(LineNumber) ~ "). "
-			~ "Error code: " ~ to!string(Error) ~ ". Details: \'" ~ GetErrorDescription(Error) ~ "\'.");		
+		string LoggedMessage = ("GraphicsDevice CheckErrors failed in " ~ FileName ~ "(" ~ to!string(LineNumber) ~ "). "
+			~ "Error code: " ~ to!string(Error) ~ ". Details: \'" ~ GetErrorDescription(Error) ~ "\'.").idup;
+		Logger.Default.LogMessage("errors", LoggedMessage);		
 		throw new Exception("GraphicsDevice CheckErrors failed. Details: \'" ~ GetErrorDescription(Error) ~ "\'.", FileName.idup, LineNumber);
 	}
 

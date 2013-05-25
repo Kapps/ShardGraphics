@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>10.0.0</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{2F6FACFB-38E9-4EDB-982F-1B35C1A4E24C}</ProjectGuid>
+    <UseDefaultCompiler>true</UseDefaultCompiler>
+    <IncrementalLinking>true</IncrementalLinking>
+    <PreferOneStepBuild>true</PreferOneStepBuild>
+    <Compiler>DMD2</Compiler>
+    <Includes>
+      <Includes>
+        <Path>F:\Dropbox\Code\Shardsoft\ShardTools</Path>
+        <Path>F:\Dropbox\Code\Shardsoft\ShardMath</Path>
+        <Path>F:\Dropbox\Code\Shardsoft\ShardContent</Path>
+      </Includes>
+    </Includes>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\Debug</OutputPath>
+    <UnittestMode>false</UnittestMode>
+    <ObjectsDirectory>obj\Debug</ObjectsDirectory>
+    <DebugLevel>0</DebugLevel>
+    <Externalconsole>true</Externalconsole>
+    <Target>StaticLibrary</Target>
+    <OutputName>libShardGraphics</OutputName>
+    <VersionIds>
+      <VersionIds>
+        <String>ShardMath</String>
+      </VersionIds>
+    </VersionIds>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <OutputPath>bin\Release</OutputPath>
+    <UnittestMode>false</UnittestMode>
+    <ObjectsDirectory>obj\Release</ObjectsDirectory>
+    <DebugLevel>0</DebugLevel>
+    <Externalconsole>true</Externalconsole>
+    <Target>StaticLibrary</Target>
+    <OutputName>libShardGraphics</OutputName>
+    <ExtraCompilerArguments>-inline</ExtraCompilerArguments>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Unittest|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\Unittest</OutputPath>
+    <UnittestMode>true</UnittestMode>
+    <ObjectsDirectory>obj\Unittest</ObjectsDirectory>
+    <DebugLevel>0</DebugLevel>
+    <Externalconsole>true</Externalconsole>
+    <Target>StaticLibrary</Target>
+    <OutputName>libShardGraphics</OutputName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Folder Include="ShardGraphics\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="ShardGraphics\all.d">
+      <LastGenOutput>obj\Release\ShardGraphics.all.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="ShardGraphics\Effect.d">
+      <LastGenOutput>obj\Release\ShardGraphics.Effect.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="ShardGraphics\EffectPool.d">
+      <LastGenOutput>obj\Release\ShardGraphics.EffectPool.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="ShardGraphics\GLReflection.d">
+      <LastGenOutput>obj\Release\ShardGraphics.GLReflection.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="ShardGraphics\GraphicsAPI.d">
+      <LastGenOutput>obj\Release\ShardGraphics.GraphicsAPI.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="ShardGraphics\GraphicsDevice.d">
+      <LastGenOutput>obj\Release\ShardGraphics.GraphicsDevice.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="ShardGraphics\GraphicsErrorHandler.d">
+      <LastGenOutput>obj\Release\ShardGraphics.GraphicsErrorHandler.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="ShardGraphics\GraphicsResource.d">
+      <LastGenOutput>obj\Release\ShardGraphics.GraphicsResource.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="ShardGraphics\Material.d">
+      <LastGenOutput>obj\Release\ShardGraphics.Material.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="ShardGraphics\MaterialShader.d">
+      <LastGenOutput>obj\Release\ShardGraphics.MaterialShader.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="ShardGraphics\Model.d">
+      <LastGenOutput>obj\Release\ShardGraphics.Model.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="ShardGraphics\ModelBatch.d">
+      <LastGenOutput>obj\Release\ShardGraphics.ModelBatch.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="ShardGraphics\ModelBone.d">
+      <LastGenOutput>obj\Release\ShardGraphics.ModelBone.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="ShardGraphics\ModelImporter.d">
+      <LastGenOutput>obj\Release\ShardGraphics.ModelImporter.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="ShardGraphics\ModelMesh.d">
+      <LastGenOutput>obj\Release\ShardGraphics.ModelMesh.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="ShardGraphics\ModelMeshPart.d">
+      <LastGenOutput>obj\Release\ShardGraphics.ModelMeshPart.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="ShardGraphics\RenderSettings.d">
+      <LastGenOutput>obj\Release\ShardGraphics.RenderSettings.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="ShardGraphics\RenderState.d">
+      <LastGenOutput>obj\Release\ShardGraphics.RenderState.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="ShardGraphics\RenderTarget.d">
+      <LastGenOutput>obj\Release\ShardGraphics.RenderTarget.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="ShardGraphics\RenderTargetCollection.d">
+      <LastGenOutput>obj\Release\ShardGraphics.RenderTargetCollection.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="ShardGraphics\Sampler.d">
+      <LastGenOutput>obj\Release\ShardGraphics.Sampler.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="ShardGraphics\SamplerCollection.d">
+      <LastGenOutput>obj\Release\ShardGraphics.SamplerCollection.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="ShardGraphics\Shader.d">
+      <LastGenOutput>obj\Release\ShardGraphics.Shader.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="ShardGraphics\ShaderAttribute.d">
+      <LastGenOutput>obj\Release\ShardGraphics.ShaderAttribute.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="ShardGraphics\ShaderImporter.d">
+      <LastGenOutput>obj\Release\ShardGraphics.ShaderImporter.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="ShardGraphics\ShaderParameterCollection.d">
+      <LastGenOutput>obj\Release\ShardGraphics.ShaderParameterCollection.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="ShardGraphics\SpriteBatch.d">
+      <LastGenOutput>obj\Release\ShardGraphics.SpriteBatch.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="ShardGraphics\SpriteFont.d">
+      <LastGenOutput>obj\Release\ShardGraphics.SpriteFont.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="ShardGraphics\SpriteFontImporter.d">
+      <LastGenOutput>obj\Release\ShardGraphics.SpriteFontImporter.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="ShardGraphics\SpriteSheet.d">
+      <LastGenOutput>obj\Release\ShardGraphics.SpriteSheet.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="ShardGraphics\SpriteSheetImporter.d">
+      <LastGenOutput>obj\Release\ShardGraphics.SpriteSheetImporter.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="ShardGraphics\SpriteSheetPart.d">
+      <LastGenOutput>obj\Release\ShardGraphics.SpriteSheetPart.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="ShardGraphics\SpriteVertex.d">
+      <LastGenOutput>obj\Release\ShardGraphics.SpriteVertex.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="ShardGraphics\StockModels.d">
+      <LastGenOutput>obj\Release\ShardGraphics.StockModels.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="ShardGraphics\Texture.d">
+      <LastGenOutput>obj\Release\ShardGraphics.Texture.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="ShardGraphics\TextureImporter.d">
+      <LastGenOutput>obj\Release\ShardGraphics.TextureImporter.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="ShardGraphics\UniformBuffer.d">
+      <LastGenOutput>obj\Release\ShardGraphics.UniformBuffer.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="ShardGraphics\VBOSlice.d">
+      <LastGenOutput>obj\Release\ShardGraphics.VBOSlice.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="ShardGraphics\VertDecBuilder.d">
+      <LastGenOutput>obj\Release\ShardGraphics.VertDecBuilder.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="ShardGraphics\VertexBufferObject.d">
+      <LastGenOutput>obj\Release\ShardGraphics.VertexBufferObject.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="ShardGraphics\VertexDeclaration.d">
+      <LastGenOutput>obj\Release\ShardGraphics.VertexDeclaration.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="ShardGraphics\VertexElement.d">
+      <LastGenOutput>obj\Release\ShardGraphics.VertexElement.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="ShardGraphics\Viewport.d">
+      <LastGenOutput>obj\Release\ShardGraphics.Viewport.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="gl.d">
+      <LastGenOutput>obj\Release\gl.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="glfuncs.d">
+      <LastGenOutput>obj\Release\glfuncs.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="glfw.d">
+      <LastGenOutput>obj\Release\glfw.obj</LastGenOutput>
+    </Compile>
+    <Compile Include="gltypes.d">
+      <LastGenOutput>obj\Release\gltypes.obj</LastGenOutput>
+    </Compile>
+  </ItemGroup>
+</Project>
