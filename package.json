@@ -1,0 +1,15 @@
+{
+	"name": "shardgraphics",
+	"targetName": "ShardGraphics",
+	"description": "A 3D graphics library focused on game development. Rendering is done using OpenGL, though it is abstracted away.",
+	"homepage": "https://shardsoft.com",
+	"copyright": "Copyright © 2013, Ognjen Ivkovic",
+	"license": "Boost",
+	"dependencies": {
+		"tested": "~master",
+		"shardtools": "~master",
+		"shardmath": "~master",
+		"shardcontent": "~master"
+	},
+	"targetType": "library"
+}
