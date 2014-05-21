@@ -1,0 +1,1 @@
+A cross-platform graphics library for use with D. Provides an abstraction layer that should be easy to convert to multiple APIs (particularly, OpenGL and DirectX) without changing any user code. At the moment only OpenGL is supported moment. No API stability is guaranteed as this library is meant primarily for personal use.
