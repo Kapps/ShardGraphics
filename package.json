@@ -9,7 +9,9 @@
 		"tested": "~master",
 		"shardtools": "~master",
 		"shardmath": "~master",
-		"shardcontent": "~master"
+		"shardcontent": "~master",
+		"derelict-gl3": "~master",
+		"derelict-glfw3": "~master"
 	},
 	"targetType": "library"
 }

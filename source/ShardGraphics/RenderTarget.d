@@ -3,7 +3,6 @@ private import ShardGraphics.GraphicsDevice;
 private import ShardGraphics.Viewport;
 private import std.conv;
 private import std.exception;
-private import crc32;
 private import std.algorithm;
 private import std.array;
 private import ShardGraphics.Texture;

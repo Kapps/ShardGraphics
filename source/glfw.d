@@ -1,5 +1,6 @@
 module glfw;
-
+public import derelict.glfw3.glfw3;
+/+
 extern(System) {
 	enum int GLFW_VERSION_MAJOR = 2;
 	enum int GLFW_VERSION_MINOR = 7;
@@ -299,4 +300,4 @@ extern(System) {
 	int glfwLoadTexture2D(const char*, int);
 	int glfwLoadMemoryTexture2D(const void *, size_t, int);
 	int glfwLoadTextureImage2D(GLFWimage *, int);
-}
+}+/

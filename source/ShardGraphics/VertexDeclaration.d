@@ -36,9 +36,7 @@ public:
 		T dummy = T.init;			
 		foreach(Index, Field; dummy.tupleof) {
 			alias typeof(Field) FieldType;			
-			enum string FieldName = T.tupleof[Index].stringof[3 + T.stringof.length .. $];
-			// alias typeof(__traits(getMember, T, Field)) FieldType;
-			//alias typeof(mixin("T.init." ~ FixedName)) FieldType;		
+			enum string FieldName = __traits(identifier, T.tupleof[Index]);
 			string ShaderAttrib;
 			if(FieldToParameterMap !is null) {
 				string* ShaderAttribPtr = (FieldName in FieldToParameterMap);

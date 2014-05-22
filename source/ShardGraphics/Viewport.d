@@ -3,7 +3,10 @@ private import ShardTools.Event;
 public import ShardMath.Rectangle;
 import gl;
 
+// TODO: This class should be removed.
+
 /// A static class to provide information about the drawing area for a window.
+/// This class will either become not static in the future or be removed.
 static class Viewport  {
 
 public static:
