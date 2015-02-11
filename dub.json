@@ -6,12 +6,10 @@
 	"copyright": "Copyright © 2013, Ognjen Ivkovic",
 	"license": "Boost",
 	"dependencies": {
-		"tested": "~master",
 		"shardtools": "~master",
 		"shardmath": "~master",
-		"shardcontent": "~master",
-		"derelict-gl3": "~master",
-		"derelict-glfw3": "~master"
+		"derelict-gl3": ">=1.0.8",
+		"derelict-glfw3": ">=1.0.2"
 	},
-	"targetType": "library"
+	"targetType": "executable"
 }

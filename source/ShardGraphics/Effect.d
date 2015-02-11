@@ -1,138 +1,133 @@
-﻿module ShardGraphics.Effect;
-private import ShardTools.ArrayOps;
+module ShardGraphics.Effect;
+
 private import std.string;
 public import ShardGraphics.UniformBuffer;
 public import ShardGraphics.EffectPool;
 
-public import ShardGraphics.GraphicsResource;
-public import gl;
+public import ShardGraphics.GpuResource;
+import gl;
 public import ShardGraphics.Shader;
-public import ShardGraphics.GraphicsDevice;
-private import ShardGraphics.GraphicsErrorHandler;
 private import std.exception;
 private import std.conv;
+import ShardTools.ExceptionTools;
+import ShardTools.Initializers;;
+import std.typecons;
+import std.container.array;
+import core.stdc.stdlib;
+import ShardTools.Logger;
+import std.algorithm;
 
 /// Represents an effect containing two or more shaders.
-class Effect : GraphicsResource {
+struct Effect {
 
 public:
 
 	/// Initializes a new instance of the Effect object.
 	/// Params:
-	///		Shaders = The shaders to create the effect with.	
-	this(Shader[] Shaders...) {		
-		this(EffectPool.Default, Shaders);
+	///		shaders		 = The shaders to create the effect with.
+	/// 	pool		 = The EffectPool this Effect belongs to. If null, the default EffectPool is used.
+	this(EffectPool pool, Shader[] shaders...) {
+		if(pool is null)
+			pool = EffectPool.global;
+		this._pool = pool;
+		this._shaders = _shaders.mallocDup;
+		this.id = GL.createProgram();
+		link();
 	}
 
-	/// Initializes a new instance of the Effect object.
-	/// Params:
-	///		Shaders		 = The shaders to create the effect with.
-	/// 	Pool		 = The EffectPool this Effect belongs to. If null, the default EffectPool is used.	
-	this(EffectPool Pool, Shader[] Shaders...) {
-		if(Pool is null)
-			Pool = EffectPool.Default;
-		this._Pool = Pool;
-		this.Shaders = cast(Shader[])Shaders.dup;		
-		GLuint ID = glCreateProgram();
-		assert(ID != 0);
-		this.ResourceID = ID;		
-		Link();
-	}	
-
-	/// Gets the first shader of the specified type.
-	///	Params:
-	///		ShaderType = The type of the shader to get.
-	/// Returns:
-	///		The first shader of the specified type, or null if not found.
-	Shader GetShader(ShaderType ShaderType) {
-		for(size_t i = 0; i < Shaders.length; i++) {
-			if(Shaders[i].Type == ShaderType)
-				return Shaders[i];
-		}
-		return null;
-	}
-
-	/// Deletes the graphics resource represented by the given ID.
-	/// Params:
-	/// 	ID = The ID of the resource to delete.
-	protected override void DeleteResource(uint ID){		
-		if(GraphicsDevice.Program is this)
-			GraphicsDevice.Program = null;
-		for(size_t i = 0; i < Shaders.length; i++) {	
-			if(Shaders[i]) // Make sure it's not null because we're being closed and dtor for it already called.
-				glDetachShader(ID, Shaders[i].ResourceID);
-		}
-		glDeleteProgram(ID);		
-	}
+	mixin GpuResource;
 
 	/// Gets the EffectPool that this Effect belongs to.
 	/// All Effects in a pool share the same uniform buffers.
-	@property EffectPool Pool() {
-		return _Pool;
+	@property EffectPool pool() {
+		return _pool;
 	}
 
-	/// Gets a collection of the names of the Uniforms that this Effect contains.
-	@property const(string[]) Uniforms() const {
-		return _Uniforms;
+	/// Gets a range of the names of the uniforms that this Effect contains.
+	@property auto uniforms() {
+		return _uniforms[];
 	}
 
-	package void Relink() {
-		Link();
+	/// Gets the first shader of the specified type.
+	///	Params:
+	///		shaderType = The type of the shader to get.
+	/// Returns:
+	///		The first shader of the specified type, or $(D Shader.init) if not found.
+	Shader getShader(ShaderType shaderType) {
+		auto res = _shaders.filter!(c=>c.type == shaderType);
+		return res.empty ? Shader.init : res.front;
 	}
-	
+
+	/+package void Relink() {
+		link();
+	}+/
+
 private:
+
+	void dispose() {
+		_shaders.mallocFree();
+	}
 	
-	void Link() {
-		Compile();
-		_Uniforms = null;		
-		foreach(Shader shader; this.Shaders) {
-			foreach(string Name; shader.UniformBlockNames) {
-				if(!Contains(_Uniforms, Name))
-					_Uniforms ~= Name;
+	void destroyResource(ResourceID id) {
+		foreach(ref s; _shaders) {
+			GL.detachShader(id, s.id);
+			s = Shader.init;
+		}
+		GL.deleteProgram(id);
+	}
+
+	void link() {
+		compile();
+		_uniforms.clear();
+		foreach(shader; this._shaders) {
+			foreach(name; shader.uniformBlockNames) {
+				if(!_uniforms[].canFind(name))
+					_uniforms.insertBack(name);
 			}
 		}
-		Pool.RegisterEffect(this);
+		pool.registerEffect(this);
 	}
 
-	void Compile() {		
+	void compile() {
 		debug {
-			bool HasVertexShader = false;
-			bool HasPixelShader = false;
+			bool hasVertexShader = false;
+			bool hasFragmentShader = false;
 		}
-		foreach(Shader; Shaders) {			
-			foreach(ShaderAttribute Attribute; Shader.Parameters.Values)
-				Attribute.Bind(this);
-			glAttachShader(ResourceID, Shader.ResourceID);
+		foreach(s; _shaders) {
+			foreach(attribute; s.params[])
+				attribute.bind(this);
+			GL.attachShader(id, s.id);
 			debug {
-				if(Shader.Type == ShaderType.VertexShader) {
-					enforce(!HasVertexShader, "A VertexShader already exists on this effect.");
-					HasVertexShader = true;
+				if(s.type == ShaderType.vertex) {
+					enforceNoGC!(Exception, "A VertexShader already exists on this effect.")(!hasVertexShader);
+					hasVertexShader = true;
 				}
-				if(Shader.Type == ShaderType.PixelShader) {
-					enforce(!HasPixelShader, "A FragmentShader already exists on this effect.");
-					HasPixelShader = true;
+				if(s.type == ShaderType.fragment) {
+					enforceNoGC!(Exception, "A FragmentShader already exists on this effect.")(!hasFragmentShader);
+					hasFragmentShader = true;
 				}
-			}						
+			}
 		}
-		debug enforce(HasVertexShader && HasPixelShader, "An effect did not have both a VertexShader and a FragmentShader.");
-		glLinkProgram(ResourceID);
-		
-		int WasSuccess;					
-		glGetProgramiv(ResourceID, GL_LINK_STATUS, &WasSuccess);
-		if(!WasSuccess) {
-			int MaxLength;					
-			glGetProgramiv(ResourceID, GL_INFO_LOG_LENGTH, &MaxLength);
-			MaxLength++;
-			char[] InfoLog = new char[MaxLength];
-			glGetProgramInfoLog(ResourceID, MaxLength, &MaxLength, InfoLog.ptr);
-			throw new Exception("An effect failed to link. " ~ to!string(InfoLog) ~ ".");
-		}		
-		foreach(Shader; Shaders)
-			Shader.Parent = this;
-		GraphicsErrorHandler.CheckErrors();
+		debug enforceNoGC!(Exception, "An effect did not have both a VertexShader and a FragmentShader.")(hasVertexShader && hasFragmentShader);
+		GL.linkProgram(id);
+
+		int wasSuccess;
+		GL.getProgramiv(id, GL_LINK_STATUS, &wasSuccess);
+		if(!wasSuccess) {
+			int maxLength;
+			GL.getProgramiv(id, GL_INFO_LOG_LENGTH, &maxLength);
+			char* logBuff = cast(char*)malloc(maxLength + 1);
+			scope(exit)
+				free(logBuff); // Can't use alloca due to exception.
+			GL.getProgramInfoLog(id, maxLength, &maxLength, logBuff);
+			logBuff[maxLength] = '\0';
+			logwf("Failed to link effect: %s", logBuff);
+			throw new Exception("An effect failed to link.");
+		}
 	}
 
-	Shader[] Shaders;
-	EffectPool _Pool;
-	string[] _Uniforms;
+	Shader[] _shaders;
+	EffectPool _pool;
+	Array!string _uniforms;
+	ResourceID _id;
 }

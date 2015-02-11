@@ -1,182 +1,193 @@
 ﻿module ShardGraphics.UniformBuffer;
 private import std.traits;
 private import ShardMath.Matrix;
-private import ShardGraphics.GraphicsErrorHandler;
 private import std.exception;
 private import ShardGraphics.Effect;
 private import ShardGraphics.Shader;
 import std.string;
-private import gl;
+private import derelict.opengl3.gl3;
 private import std.c.string : memcpy;
+import core.stdc.stdlib : malloc, free;
+import ShardGraphics.GpuResource;
+import ShardTools.ScopeString : ScopeString, scoped;
+import ShardTools.Logger;
+import ShardGraphics.GraphicsBuffer;
+import std.typecons;
+import ShardTools.HashTable;
+import core.memory;
+import gl;
+
+// TODO: Wrap in UniformObject!T(Buffer).
 
 /// Provides access to a buffer containing the uniform variables for one or more shaders.
 /// This can be useful as an optimization when multiple shaders use the same values (such as a global WorldViewProjection matrix or lighting).
-class UniformBuffer : GraphicsResource {	
+/// Unlike uniform variables, UniformBuffers are not attached directly to an effect.
+/// Instead they are bound to an $(D EffectPool), and effects are registered within that pool.
+/// Bugs:
+/// 	EffectPool support not yet implemented; all shaders share the same set of uniform blocks.
+struct UniformBuffer {
 
 public:
-	/// Initializes a new instance of the UniformBuffer object.
-	/// Params:
-	/// 	Fields = The fields in the uniform buffer.
-	/// 	UniformIndex = The index of the uniform buffer within the shader.
-	/// 	Name = The name of the uniform buffer.
-	/// 	Program = The effect containing this buffer.
-	this(Effect Program, string Name) {				
-		this._Name = Name;
-		this._Program = Program;
-		this._Index = glGetUniformBlockIndex(Program.ResourceID, toStringz(Name));		
-		enforce(_Index >= 0, "Unable to get the uniform index for " ~ Name ~ ".");
-		glGetActiveUniformBlockiv(Program.ResourceID, Index, GL_UNIFORM_BLOCK_DATA_SIZE, &_Size);
-		GLuint ID;
-		glGenBuffers(1, &ID);
-		this.ResourceID = ID;		
-		glBindBuffer(GL_UNIFORM_BUFFER, ResourceID);
-		glBufferData(GL_UNIFORM_BUFFER, Size, null, GL_DYNAMIC_DRAW);				
-		glBindBuffer(GL_UNIFORM_BUFFER, 0);
-		this._Value = cast(void[])(new ubyte[Size]);
-		/+glBindBuffer(GL_UNIFORM_BUFFER, ResourceID);
-		glBufferData(GL_UNIFORM_BUFFER, T.sizeof, null, GL_STREAM_DRAW);		
-		glBindBuffer(GL_UNIFORM_BUFFER, 0);+/
+	/// Initializes a new instance UniformBuffer from the specified prepopulated data.
+	this(GLuint programID, string name, size_t index, HashTable!(string, size_t) offsets) {
+		this._name = name;
+		this._buffer = UniformBufferStore(BufferModifyHint.frequent, BufferAccessHint.readWrite);
+		this._offsets = offsets;
+		this._blockIndex = cast(uint)index;
+
+		int size;
+		GL.getActiveUniformBlockiv(programID, _blockIndex, GL_UNIFORM_BLOCK_DATA_SIZE, &size);
+		buffer.allocData(size);
 	}
 
-	/// Gets the index (or ID) associated with this buffer.
-	@property int Index() const {
-		return _Index;
+	/// Gets the name of this uniform buffer.
+	@property string name() const {
+		return _name;
 	}
-
+	
 	/// Gets the size, in bytes, of this Uniform buffer.
-	@property int Size() const {
-		return _Size;
+	@property size_t size() {
+		return buffer.size;
+	}
+	
+	/// Returns the GraphicsBuffer used to store data for this uniform block.
+	@property UniformBufferStore buffer() {
+		return _buffer;
 	}
 
-	/// Gets or sets the value contained by the buffer.	
+	/// Returns a struct containing the offsets of elements within this buffer.
+	/// The returned struct includes only `opIndex` and `length` members.
+	@property auto offsets() {
+		static struct Result {
+			this(HashTable!(string, size_t) offsets) {
+				this.offsets = offsets;
+			}
+			@property size_t length() {
+				return offsets.length;
+			}
+			size_t opIndex(string name) {
+				return offsets[name];
+			}
+			private HashTable!(string, size_t) offsets;
+		}
+		return Result(_offsets);
+	}
+
+	/// Returns a new UniformBuffer with the given name, loading data from the instance of the buffer on the given Effect.
+	/// If no buffer with the given name is found, $(D UniformBuffer.init) is returned.
+	static UniformBuffer fromEffect(ref Effect effect, string name) {
+		GLint numBlocks;
+		GL.getProgramiv(effect.id, GL_ACTIVE_UNIFORM_BLOCKS, &numBlocks);
+		for(uint i = 0; i < numBlocks; i++) {
+			ScopeString!256 nameBuff;
+			GLsizei nameLen;
+			GL.getActiveUniformBlockName(effect.id, i, 256 - 1, &nameLen, nameBuff.ptr);
+			if(nameBuff.ptr[0..nameLen] == name)
+				return createBuffer(effect.id, name, i);
+		}
+		return UniformBuffer.init;
+	}
+
+	/// Sets the value of a single field in this buffer.
+	/// Note that this method requires a HashTable lookup, so if the offset remains
+	/// constant (shared layout), it is more efficient to set the buffer data directly.
+	void set(T)(string name, in T value) if(is(T == struct) && !hasIndirections!T) {
+		auto offset = _nameToOffset[name];
+		auto data = cast(ubyte[])(&value[0..1]);
+		buffer.setOffsetData(data, offset);
+	}
+
+	/+/// Gets or sets the value contained by the buffer.
 	/// Params:
-	/// 	Value = The Value to set.
-	@property void Set(T)(in T Value) {			
-		/*if(!_DataSet) {
-			glBindBuffer(GL_UNIFORM_BUFFER, ResourceID);			
-			glBindBufferBase(GL_UNIFORM_BUFFER, Index, ResourceID);
-			//glBindBufferRange(GL_UNIFORM_BUFFER, Index, ResourceID, 0, T.sizeof);
-			_DataSet = true;
+	/// 	value = The value to set.
+	@property void set(T)(in T value) {
+		/*if(!_dataSet) {
+			glBindBuffer(GL_UNIFORM_BUFFER, id);
+			glBindBufferBase(GL_UNIFORM_BUFFER, index, id);
+			//glBindBufferRange(GL_UNIFORM_BUFFER, index, id, 0, T.sizeof);
+			_dataSet = true;
 			GraphicsErrorHandler.CheckErrors();
-		}*/			
-		this._Value = cast(void[])Value;
+		}*/
+		this._value = cast(void[])value;
 		// This was removed because it's probably more expensive to go through every single field and compare + assign instead of just a single block assign.
 		// On the other hand, it would enable shared instead of just std140.
 		// For now, using just the below so we can use shared. Consider optimizing for std140.
-		//static if(T.sizeof > 128) {			
-			T CurrentFull = this.Get!T();
-			glBindBuffer(GL_UNIFORM_BUFFER, ResourceID);
-			//glBindBufferBase(GL_UNIFORM_BUFFER, Index, ResourceID);
-			glBindBufferBase(GL_UNIFORM_BUFFER, EffectPool.Default.BufferToIndex[this], ResourceID);
-			foreach(Index, Field; Value.tupleof) {
-				alias typeof(Field) FieldType;
-				enum string FieldName = T.tupleof[Index].stringof[3 + T.stringof.length .. $];
-				T Current = __traits(getMember, CurrentFull, FieldName);
-				T New = __traits(getMember, Value, FieldName);
-				if(Current == New)
-					continue;
-				SetVariableInternal!(FieldName, FieldType)(New);
-			}
-			glBindBuffer(GL_UNIFORM_BUFFER, 0);
+		//static if(T.sizeof > 128) {
+		T CurrentFull = this.get!T();
+		glBindBuffer(GL_UNIFORM_BUFFER, id);
+		//glBindBufferBase(GL_UNIFORM_BUFFER, index, id);
+		glBindBufferBase(GL_UNIFORM_BUFFER, EffectPool.Default.BufferToIndex[this], id);
+		foreach(index, field; value.tupleof) {
+			alias typeof(field) FieldType;
+			enum string FieldName = T.tupleof[index].stringof[3 + T.stringof.length .. $];
+			T Current = __traits(getMember, CurrentFull, FieldName);
+			T New = __traits(getMember, value, FieldName);
+			if(Current == New)
+				continue;
+			setVariableInternal!(FieldName, FieldType)(New);
+		}
+		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 		/*} else {
 			// TODO: Static if T.sizeof > 64, go through each property one at a time and update. Make sure this is generated at compile-time.
 			// If just 64 or less, easier to just set the whole value.
 			// TODO: Consider caching this. Keep in mind though, DirectX doesn't have the concept of uniform buffers(?), so putting it on GraphicsDevice is a bad idea.
 			// Also, this isn't something the user needs to worry about what's currently active for, so perhaps there's no point in doing so.
-			glBindBuffer(GL_UNIFORM_BUFFER, ResourceID);
-			glBufferData(GL_UNIFORM_BUFFER, T.sizeof, &Value, GL_STREAM_DRAW);		
+			glBindBuffer(GL_UNIFORM_BUFFER, id);
+			glBufferData(GL_UNIFORM_BUFFER, T.sizeof, &value, GL_STREAM_DRAW);
 			glBindBuffer(GL_UNIFORM_BUFFER, 0);
 		//}*/
-		//_Value = Value;
-	}
+		//_value = value;
+	}+/
 
-	/// Ditto
-	@disable @property const(T) Get(T)() {
-		// TODO. This requires mapping the buffer, figuring out sizes, offsets, etc.
-		return cast(T)_Value;
-	}
-
-	/// Gets or sets a single field in this buffer.
-	/// Params:
-	/// 	Offset = The offset of the value. Usually gotten by Field.offset.
-	/// 	Value = The value to assign.
-	void Set(string Name, T)(in T Value) {
-
-		// TODO: Support indexing.
-
-		//enforce(_DataSet, "Value must be set prior to PartialValue being set.");
-		//enforce(Value.length + Offset <= T.sizeof);		
-		/*T OriginalValue = *(cast(T*)this._Value.ptr);
-		if(OriginalValue == Value)
-			return;		*/				
-		glBindBuffer(GL_UNIFORM_BUFFER, ResourceID);
-		// TODO: REMOVE
-		//if(!_DataSet) {
-			//glBindBufferBase(GL_UNIFORM_BUFFER, Index, ResourceID);
-			//_DataSet = true;
-		//}
-		//glBindBufferBase(GL_UNIFORM_BUFFER, Index, ResourceID);
-		// TODO: Change BufferToIndex to not be dumb. Like, have this class contain it.
-		glBindBufferBase(GL_UNIFORM_BUFFER, EffectPool.Default.BufferToIndex[this], ResourceID);
-		SetVariableInternal!(Name, T)(Value);
-		glBindBuffer(GL_UNIFORM_BUFFER, 0);
-		//memcpy((cast(ubyte*)(&_Value)) + Offset, Value.ptr, Value.length);
-	}
-
-	/// Ditto
-	@disable const(T) Get(string Name, T)() {
-		// TODO. See other Get.
-		T Val = *(cast(T*)this._Value.ptr);
-		return __traits(getMember, Val, Name);
-	}
-
-	// Internal variable assigner. Does not perform any checks, nor change the active buffer.
-	private void SetVariableInternal(string Name, T)(in T Value) {
-		size_t Offset = GetAndSetOffset(Name);
-		static if(is(Unqual!T == Color)) {
-			Vector3f c = Value.ToVector3();
-			// TODO: Support Vector4.
-			glBufferSubData(GL_UNIFORM_BUFFER, Offset, typeof(c).sizeof, &c);
-		} else
-			glBufferSubData(GL_UNIFORM_BUFFER, Offset, T.sizeof, &Value);
-		//__traits(getMember, this._Value, Name) = Value;
-	}	
-
-	/// Deletes the graphics resource represented by the given ID.
-	/// Params:
-	/// 	ID = The ID of the resource to delete.
-	protected override void DeleteResource(GLuint ID) {
-		// Do nothing?
-	}
-
-	/// Gets the name of this uniform buffer.
-	@property string Name() const {
-		return _Name;
-	}
-		
 private:
-	///T _Value;
-	int[string] NameToOffset;
-	void[] _Value;
-	int _Index;
-	string _Name;
-	Effect _Program;	
-	int _Size;	
-	bool _DataSet = false;
+	string _name;
+	UniformBufferStore _buffer;
+	HashTable!(string, size_t) _offsets;
+	uint _blockIndex;
 
-	// Assumes: Buffer is bound. Assigns NameToOffset.
-	int GetAndSetOffset(string Name) {
-		int* Result = (Name in NameToOffset);
+	static UniformBuffer createBuffer(GLuint programID, string name, uint blockIndex) {
+		GLint numIndices;
+		GL.getActiveUniformBlockiv(programID, blockIndex, GL_UNIFORM_BLOCK_ACTIVE_UNIFORMS, &numIndices);
+		GLint* indices = cast(GLint*)malloc(numIndices * GLint.sizeof);
+		scope(exit)
+			free(indices); // Can't use alloca + exceptions on Win64.
+		GL.getActiveUniformBlockiv(programID, blockIndex, GL_UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES, indices);
+		GLint blockSize;
+		GL.getActiveUniformBlockiv(programID, blockIndex, GL_UNIFORM_BLOCK_DATA_SIZE, &blockSize);
+		
+		auto offsets = HashTable!(string, size_t)(0, 1); // Non-resizing.
+		offsets.reserve(numIndices);
+		for(size_t j = 0; j < numIndices; j++) {
+			auto index = cast(GLuint)indices[j];
+			GLint offset;
+			GL.getActiveUniformsiv(programID, 1, &index, GL_UNIFORM_OFFSET, &offset);
+			GLsizei uniformNameLen;
+			GL.getActiveUniformsiv(programID, 1, &index, GL_UNIFORM_NAME_LENGTH, &uniformNameLen);
+			// GC allocation for convenience, generally not called after loading after all.
+			char* uniformNameBuff = cast(char*)GC.malloc(uniformNameLen + 1);
+			GL.getActiveUniform(programID, index, uniformNameLen, null, null, null, uniformNameBuff);
+			uniformNameBuff[uniformNameLen] = '\0';
+			
+			string offName = cast(string)uniformNameBuff[0..uniformNameLen];
+			offsets[offName] = offset;
+		}
+		return UniformBuffer(blockIndex, name, blockSize, offsets);
+	}
+
+	/+// Assumes: Buffer is bound. Assigns nameToOffset.
+	int getAndSetOffset(string name) {
+		int* Result = (name in nameToOffset);
 		if(Result)
 			return *Result;
-		const char* NamePtr = cast(const)toStringz(Name);
-		uint Index;
-		glGetUniformIndices(_Program.ResourceID, 1, &NamePtr, &Index);
-		enforce(Index != GL_INVALID_INDEX, "Unable to get the index for uniform named " ~ Name ~ " within " ~ _Name ~ ".");
-		int Offset;
-		glGetActiveUniformsiv(_Program.ResourceID, 1, &Index, GL_UNIFORM_OFFSET, &Offset);
-		enforce(Offset != -1, "Unable to get offset for uniform named " ~ Name ~ " within " ~ _Name ~ ".");
-		NameToOffset[Name] = Offset;
-		return Offset;
-	}
+		auto buff = ScopeString!256(name);
+		auto buffPtr = buff.ptr; // lvalue
+		uint index;
+		glGetUniformIndices(_program.id, 1, &buffPtr, &index);
+		enforce(index != GL_INVALID_INDEX, "Unable to get the index for uniform named " ~ name ~ " within " ~ _name ~ ".");
+		int offset;
+		glGetActiveUniformsiv(_program.id, 1, &index, GL_UNIFORM_OFFSET, &offset);
+		enforce(offset != -1, "Unable to get offset for uniform named " ~ name ~ " within " ~ _name ~ ".");
+		nameToOffset[name] = offset;
+		return offset;
+	}+/
 }

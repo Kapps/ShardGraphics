@@ -1,0 +1,12 @@
+{
+	"fileVersion": 1,
+	"versions": {
+		"shardtools": "~master",
+		"msgpack-d": "~master",
+		"tested": "~master",
+		"derelict-util": "1.9.1",
+		"shardmath": "~master",
+		"derelict-glfw3": "1.1.0",
+		"derelict-gl3": "1.0.12"
+	}
+}

@@ -1,106 +1,137 @@
-﻿module ShardGraphics.Shader;
-public import ShardGraphics.GraphicsResource;
-public import ShardGraphics.ShaderParameterCollection;
-public import ShardGraphics.ShaderAttribute;
-public import gl;
-private import ShardGraphics.GraphicsDevice;
-private import ShardGraphics.GraphicsErrorHandler;
+module ShardGraphics.Shader;
+
+public import ShardGraphics.GpuResource;
+public import ShardGraphics.ShaderParameter;
 private import std.exception;
 
-public import ShardGraphics.VertexDeclaration;
+import ShardTools.Initializers;
+import ShardTools.Logger;
+import std.typecons;
+import ShardGraphics.GpuResource;
+import ShardTools.ExceptionTools;
+import derelict.opengl3.gl3;
+import gl;
 
 /// Represents the type of shader being used.
-public enum ShaderType {	
-	PixelShader = GL_FRAGMENT_SHADER,
-	VertexShader = GL_VERTEX_SHADER,
-	GeometryShader = GL_GEOMETRY_SHADER
+public enum ShaderType {
+	fragment = GL_FRAGMENT_SHADER,
+	vertex = GL_VERTEX_SHADER,
+	geometry = GL_GEOMETRY_SHADER
 }
 
 /// Represents a single shader inside an effect.
-final class Shader : GraphicsResource {
+struct Shader {
 
 public:
-	/// Initializes a new instance of the Shader object.
-	/// Params:
-	///		Type = The type of this shader, such as VertexShader.
-	///		Source = The source code to compile the shader with.
-	///		Attributes = The attributes the shader contains.
-	this(ShaderType Type, string[] UniformBlockNames, in char[] Source, ShaderAttribute[] Attributes) {
-		assert(Type == ShaderType.PixelShader || Type == ShaderType.VertexShader || Type == ShaderType.GeometryShader);
-		this._Type = Type;
-		this._Parameters = new ShaderParameterCollection(Attributes);
-		this._Source = Source.idup;
-		this.UniformBlockNames = UniformBlockNames.dup;		
-		GLuint ID = glCreateShader(cast(GLenum)Type);
-		this.ResourceID = ID;
-		GenerateShader(Source);				
+
+	/// Creates a new Shader with the given pre-populated data.
+	this(ShaderType type, string[] uniformBlockNames, string source, ShaderParameter[] params) {
+		//assert(type == ShaderType.fragment || type == ShaderType.vertex || type == ShaderType.geometry);
+		this._type = type;
+		this._params = ShaderParameterCollection(params);
+		this._source = source;
+		this._uniformBlockNames = uniformBlockNames;
+		this.id = GL.createShader(cast(GLenum)type);
+		generateShader(source);
 	}
 
-	/// Gets the parameters this Shader contains.
-	@property ShaderParameterCollection Parameters() {
-		return _Parameters;
+	mixin GpuResource;
+
+	/// Gets the parameters that0 this Shader contains.
+	@property ShaderParameterCollection params() {
+		return _params;
+	}
+
+	/// Gets a range of strings containing all of the names of the uniform blocks this shader uses.
+	@property auto uniformBlockNames() {
+		return _uniformBlockNames;
 	}
 
 	/// Gets the type of this Shader, a value from the ShaderType enum.
-	@property ShaderType Type() const {
-		return _Type;
+	@property ShaderType type() const {
+		return _type;
 	}
 
-	/// Gets the Effect owning this Shader, provided that this Shader has been successfully linked to an Effect.
-	@property Effect Parent() {
-		return _Parent;
-	}
-
-	@property package void Parent(Effect Value) {
-		_Parent = Value;
-	}
-
-	/// Deletes the graphics resource represented by the given ID.
-	/// Params:
-	/// 	ID = The ID of the resource to delete.
-	protected override void DeleteResource(GLuint ID) {		
-		glDeleteShader(ID);					
-	}	
-
-	/// Creates a copy of this Shader, but does not copy over the uniform parameters.
+	// TODO: Implement these when necessary.
+	/+/// Creates a copy of this Shader, but does not copy over the uniform params.
 	Shader Clone() {
-		ShaderAttribute[] Attribs = this.Parameters.Values.dup;
-		for(size_t i = 0; i < Attribs.length; i++)
-			Attribs[i] = new ShaderAttribute(Attribs[i].Name, Attribs[i].Type, Attribs[i].Modifiers);
-		return new Shader(Type, UniformBlockNames, _Source, Attribs);
+		ShaderAttribute[] attribs = this.params.Values.dup;
+		for(size_t i = 0; i < attribs.length; i++)
+			attribs[i] = new ShaderAttribute(attribs[i].name, attribs[i].type, attribs[i].modifiers);
+		return new Shader(type, uniformBlockNames, _source, attribs);
 	}
 
-	package string[] UniformBlockNames;
-
-	package void Reload(string[] UniformBlockNames, in char[] Source, ShaderAttribute[] Attributes) {
-		this._Parameters.Rebind(Attributes);
-		this._Source = Source.idup;
-		this.UniformBlockNames = UniformBlockNames.dup;
-		GenerateShader(Source);
+	package void reload(string[] uniformBlockNames, in char[] source, ShaderAttribute[] attributes) {
+		this._params.Rebind(Attributes);
+		this._source = source.idup;
+		this.uniformBlockNames = uniformBlockNames.dup;
+		GenerateShader(source);
 		if(Parent)
 			Parent.Relink();
-	}
-	
+	}+/
+
 private:
+	ShaderType _type;
+	ShaderParameterCollection _params;
+	string _source;
+	string[] _uniformBlockNames;
 
-	void GenerateShader(in char[] Source) {		
-		const char* SourcePtr = Source.ptr;
-		enforce(Source != null, "The source for the shader was null.");
-		GLint length = cast(int)Source.length;		
-		glShaderSource(ResourceID, 1, &SourcePtr, &length);
-		glCompileShader(ResourceID);		
-		int Result;
-		glGetShaderiv(ResourceID, GL_COMPILE_STATUS, &Result);
-		if(Result != GL_TRUE) {
-			char[2048] ErrorMessage;
-			int ActualSize;
-			glGetShaderInfoLog(ResourceID, 2048, &ActualSize, ErrorMessage.ptr);
-			throw new Exception("A shader failed to compile. Details: \'" ~ ErrorMessage[0..ActualSize].idup ~ "\'.");
-		}			
+	void destroyResource(ResourceID id) {
+		GL.deleteShader(id);
 	}
 
-	ShaderType _Type;
-	ShaderParameterCollection _Parameters;
-	string _Source;
-	Effect _Parent;
+	void generateShader(in char[] source) {
+		source.enforceNoGC();
+		// Must be lvalues:
+		auto sPtr = source.ptr;
+		auto sLen = cast(GLint)source.length;
+		GL.shaderSource(id, 1, &sPtr, &sLen);
+		GL.compileShader(id);
+		int result;
+		GL.getShaderiv(id, GL_COMPILE_STATUS, &result);
+		if(result != GL_TRUE) {
+			char[2048] msg;
+			int logLength;
+			GL.getShaderInfoLog(id, 2048, &logLength, msg.ptr);
+			logwf("Failed to compile shader: %s", msg[0..logLength]);
+			throw new Exception("A shader failed to compile.");
+		}
+	}
+}
+
+/// Stores access to the params used for a shader.
+struct ShaderParameterCollection {
+
+	/// Indicates the number of params available.
+	@property size_t length() {
+		return _params.length;
+	}
+
+	/// Returns the parameter with the given index.
+	@property ShaderParameter opIndex(size_t index) {
+		return _params[index];
+	}
+
+	/// Returns the parameter with the given name.
+	@property ShaderParameter opIndex(string name) {
+		// TODO: This needs to not be O(N).
+		foreach(param; _params) {
+			if(param.name == name)
+				return param;
+		}
+		return ShaderParameter.init;
+	}
+
+	/// Gets the underlying array of the parameter collection.
+	ShaderParameter[] opSlice() {
+		return _params;
+	}
+
+	/// Wraps the given parameters in a collection.
+	this(ShaderParameter[] params) {
+		this._params = params;
+	}
+
+private:
+	ShaderParameter[] _params;
 }
