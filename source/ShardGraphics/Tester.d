@@ -11,6 +11,7 @@ import ShardTools.ConsoleLogger;
 import core.thread;
 import std.datetime;
 import ShardGraphics.GraphicsBuffer;
+import ShardGraphics.VertexDeclaration;
 import gl;
 
 void main() {
@@ -48,14 +49,24 @@ void main() {
 	ibuff.setData(idata);
 	auto lastChange = Clock.currTime();
 	size_t numFrames = 0;
+	auto vertDec = createDeclaration!Vector3f();
+	writeln(vertDec);
 	while(!glfwWindowShouldClose(window.handle)) {
 		numFrames++;
 		glfwPollEvents();
 		GL.bindBuffer(GL_ARRAY_BUFFER, vbuff.id);
-		GL.enableVertexAttribArray(0);
+		log("1");
+		/+GL.enableVertexAttribArray(0);
 		GL.vertexAttribPointer(0, 3, GL_FLOAT, false, 0, null);
+		GL.vertexArrayVertexBuffer(vertDec.id, 0, vbuff.id, 0, cast(int)Vector3f.sizeof);+/
+		log("3");
+		GL.vertexArrayAttribFormat(vertDec.id, 0, 3, GL_FLOAT, false, 0);
+		GL.enableVertexAttribArray(vertDec.id);
+		log("2");
 		GL.bindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibuff.id);
-		GL.drawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, null);
+		log("4");
+		GL.drawElements(GL_TRIANGLES, 1, GL_UNSIGNED_INT, null);
+		"5".log;
 		//glDrawArrays(GL_TRIANGLES, 0, 3);
 		glfwSwapBuffers(window.handle);
 		if(Clock.currTime() - lastChange > 1.seconds) {

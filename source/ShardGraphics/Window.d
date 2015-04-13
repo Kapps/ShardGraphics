@@ -4,7 +4,7 @@ import ShardTools.ScopeString;
 import ShardMath.Vector;
 import ShardGraphics.Display;
 import ShardGraphics.GpuResource;
-import ShardGraphics.GraphicsContext;
+public import ShardGraphics.GraphicsContext;
 import ShardTools.ExceptionTools;
 import ShardTools.Logger;
 

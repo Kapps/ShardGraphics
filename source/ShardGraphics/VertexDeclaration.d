@@ -3,84 +3,127 @@ import ShardTools.Initializers;
 import derelict.opengl3.gl3;
 import std.typecons;
 import std.traits;
+import ShardMath.Vector;
+import ShardMath.Matrix;
+import ShardTools.Color;
+import ShardTools.Udas;
+import std.typetuple;
+import ShardGraphics.GpuResource;
+import std.conv;
 
-/// Provides a collection of VertexAttributes that are used for a single render.
-/// Optionally allows specifying a capacity as a template, which if non-zero will
-/// result in the attributes being allocated on the stack rather than being RefCounted
-/// and allocated on the heap.
-template VertexDeclaration(size_t numElements = 0) {
-	static if(numElements == 0)
-		alias VertexDeclaration = RefCounted!(VertexDeclarationImpl, RefCountedAutoInitialize.no);
-	else
-		alias VertexDeclaration = VertexDeclarationImpl!(numElements);
-}
+/// Provides a collection of VertexAttributes stored together in a Vertex Declaration or Vertex Array Object.
+struct VertexDeclaration {
 
-/// Ditto
-struct VertexDeclarationImpl(size_t numElements = 0) {
-	/// No default constructor allowed.
-	@disable this();
+	mixin GpuResource;
 
-	static if(numElements == 0) {
-		/// Creates a new VertexDeclaration of `attribCount` uninitialized elements.
-		/// The user is responsible for assigning all elements prior to a render call.
-		this(size_t attribCount) {
-			_attributes = mallocNew!(VertexAttribute[])(capacity);
-		}
-		/// Creates a new VertexDeclaration by duplicating an existing array on the heap using `malloc`.
-		this(VertexAttribute[] attributes) {
-			_attributes = attributes.mallocDup;
-		}
-		/// Releases the manual memory allocated by the VertexDeclaration when using a non-fixed size.
-		~this() {
-			if(_attributes.length)
-				_attributes.mallocFree();
-		}
-	} else {
-		/// Creates a VertexDeclaration from an existing static array of attributes.
-		this(VertexAttribute[numElements] attributes) {
-			this._attributes = attributes;
-		}
-	}
-
-	/// Creates a VertexDeclaration by specifying each attribute as an argument.
-	this(T...)(T elements) if(numElements == 0 || elements.length == numElements) {
-		static if(numElements == 0)
-			this._attributes = mallocNew!(VertexAttribute[])(elements.length);
-		for(size_t i = 0; i < T.length; i++)
-			this._attributes[i] = elements[i];
+	/// Creates a new VertexArrayObject containing the given number of elements.
+	this(size_t length) {
+		this._length = length;
+		GLuint id;
+		glCreateVertexArrays(1, &id);
+		this.id = id;
 	}
 
 	/// Returns the number of attributes in this declaration.
 	@property size_t length() const {
-		return _attributes.length;
+		return _length;
 	}
 
-	/// Gets or sets the attribute at the given index.
-	VertexAttribute opIndex(size_t index) {
-		return _attributes[index];
-	}
-
-	/// Ditto
+	/// Sets the attribute at the given index.
 	void opIndexAssign(VertexAttribute attrib, size_t index) {
-		_attributes[index] = attrib;
-	}
-
-	/// Returns a range of the attributes set on this declaration.
-	@property auto attributes() {
-		return _attributes;
+		if(index >= length)
+			assert(0, "Index out of range.");
+		glEnableVertexArrayAttrib(id, cast(uint)index);
+		glVertexArrayAttribFormat(id, cast(uint)index, cast(int)attrib.count, attrib.type, false, cast(uint)attrib.offset);
 	}
 
 private:
-	VertexAttribute[] _attributes;
+	size_t _length;
+
+	void destroyResource(ResourceID id) {
+		glDeleteVertexArrays(1, &id);
+	}
 }
 
 /// Creates a VertexDeclaration from the given type by enumerating over its fields and adding each as an attribute.
 auto createDeclaration(T)() if(is(T == struct) && !hasIndirections!T) {
-	alias FieldTup = Select!(is(T == struct), T.tupleof, Tuple!(T));
-	VertexDeclaration!(FieldTup.length) declaration;
-	foreach(val; T.tupleof) {
-
+	static if(is(T == Vector!(N, ET), int N, ET) || is(T == Matrix!(N, ET), int N, ET)) {
+		// Special handling for Vector/Matrix due to their containing unions.
+		auto declaration = VertexDeclaration(1);
+		declaration[0] = VertexAttribute(0, ElementCount!T, vertexElementType!T, 0);
+	} else {
+		auto declaration = VertexDeclaration(T.tupleof.length);
+		foreach(i, val; T.init.tupleof) {
+			alias VT = typeof(val);
+			auto count = ElementCount!VT;
+			auto type = vertexElementType!VT;
+			auto offset = T.tupleof[i].offsetof;
+			declaration[i] = VertexAttribute(i, count, type, offset);
+		}
 	}
+	return declaration;
+}
+
+private template ElementCount(T_) {
+	alias T = Unqual!T_;
+	static if(is(T == Color))
+		enum ElementCount = 4;
+	else static if(is(T == Vector!(N, ET), int N, ET))
+		enum ElementCount = N;
+	else static if(is(T == Matrix!(N, ET), int N, ET))
+		enum ElementCount = N * N;
+	else
+		enum ElementCount = 1;
+}
+
+private template ElementType(T_) {
+	alias T = Unqual!T_;
+	static if(is(T == Vector!(N, ET), int N, ET))
+		alias ElementType = ET;
+	else static if(is(T == Matrix!(N, ET), int N, ET))
+		alias ElementType = ET;
+	else static if(is(T == Color))
+		alias ElementType = float;
+	else
+		alias ElementType = T;
+}
+
+private template TypeName(T_) {
+	alias T = Unqual!T_;
+	static if(is(typeof(__traits(identifier, T))))
+		enum TypeName = __traits(identifier, T);
+	else
+		enum TypeName = T.stringof;
+}
+
+private template EnumNames(T, size_t index = 0) {
+	static if(index < EnumMembers!T.length - 1)
+		enum EnumNames = [__traits(identifier, EnumMembers!T[index])] ~ EnumNames!(T, index + 1);
+	else
+		enum EnumNames = [__traits(identifier, EnumMembers!T[index])];
+}
+
+private VertexElementType vertexElementType(T_)() {
+	alias T = ElementType!(Unqual!T_);
+	enum typeStr = TypeName!T ~ "_";
+	static assert(is(typeof(to!VertexElementType(typeStr))), "Unable to determine element type for " ~ T_.stringof ~ ".");
+	enum res = to!VertexElementType(typeStr);
+	return res;
+}
+
+@name("ElementCount Tests")
+unittest {
+	assert(ElementCount!int == 1);
+	assert(is(ElementType!int == int));
+	assert(vertexElementType!int == VertexElementType.int_);
+
+	assert(ElementCount!Vector3f == 3);
+	assert(is(ElementType!Vector3f == float));
+	assert(vertexElementType!Vector3f == VertexElementType.float_);
+
+	assert(ElementCount!Matrix4d == 16);
+	assert(is(ElementType!Matrix4d == double));
+	assert(vertexElementType!Matrix4d == VertexElementType.double_);
 }
 
 /// Represents a single vertex attribute used for rendering.
@@ -98,6 +141,13 @@ struct VertexAttribute {
 	const VertexElementType type;
 	/// The offset, in bytes, within the vertex that this attribute is located at.
 	const size_t offset;
+
+	this(size_t index, size_t count, VertexElementType type, size_t offset) {
+		this.index = index;
+		this.count = count;
+		this.type = type;
+		this.offset = offset;
+	}
 }
 
 /// Indicates the type of the values within a vertex.

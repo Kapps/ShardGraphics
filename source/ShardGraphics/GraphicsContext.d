@@ -1,7 +1,7 @@
 ﻿module ShardGraphics.GraphicsContext;
 
 /// The base class for a graphics context.
-class GraphicsContext {
+abstract class GraphicsContext {
 
 	/// Marks this context as being the currently active graphics context.
 	final void makeActive() {

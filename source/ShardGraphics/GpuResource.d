@@ -48,8 +48,9 @@ mixin template GpuResource() {
 	/+/// Dummy constructor for implementors to instantiate using the factory method.
 	private this(bool dummyctor = false) { }+/
 
-	static assert(__traits(hasMember, typeof(this), "destroyResource"), "The destroyResource(id) member is required for implementing GpuResource.");
+	//static assert(__traits(hasMember, typeof(this), "destroyResource"), "The destroyResource(id) member is required for implementing GpuResource.");
 	static assert(is(typeof(this) == struct), "GpuResources must be structs.");
+	static assert(is(typeof(destroyResource(ResourceID.init))), "GpuResource must implement a destroyResource(ResourceID) function.");
 
 	/// Destructor to adjust reference counts and free the resource if need be.
 	~this() {
@@ -74,6 +75,10 @@ mixin template GpuResource() {
 	/// If an existing ID is set, that ID is replaced for all shared resources and the reference count is not altered.
 	/// The old resource is freed.
 	@property protected void id(ResourceID val) {
+		debug {
+			if(payload && val == payload.id)
+				logwf("Assigning same ID (%s) to %s. This is wasteful and results in additional allocations.", val, typeid(this));
+		}
 		if(payload) {
 			destroyResource(id);
 			logtf("Changing ID of %s from %s to %s.", typeid(this), id, val);
